@@ -1,0 +1,36 @@
+---
+title: "emmawranglecovid"
+author: "Emma Strawbridge"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+
+bigBoy <- read_excel("~/Downloads/covid-19-raw-data-2-16-2023.xlsx", sheet = 4)
+poverT <- read.csv("~/data/covid-19-raw-data-2-16-2023.xlsx", sheet = 10)
+```
+
+## things to note
+
+Definition of Poverty rate: https://data.oecd.org/inequality/poverty-rate.htm#indicator-chart 
+The poverty rate is the ratio of the number of people (in a given age group) whose income falls below the poverty line; taken as half the median household income of the total population. It is also available by broad age group: child poverty (0-17 years old), working-age poverty and elderly poverty (66 year-olds or more). However, two countries with the same poverty rates may differ in terms of the relative income-level of the poor.
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
