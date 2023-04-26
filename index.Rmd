@@ -1,7 +1,7 @@
 ---
-title: "Your Project Title Here"
-author: "Your team member names here"
-date: "Add a date"
+title: "Covid-19 Trends on the Global Level"
+author: "Emma Strawbridge, Lynca Kaminka, Tabitha Tatusko"
+date: "May 9th, 2023"
 output:
   rmdformats::readthedown:
     highlight: "kate"

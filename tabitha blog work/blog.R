@@ -8,6 +8,7 @@ library(datasets)
 library(tidytext)
 library(textdata)
 library(stringr)
+library(plotly)
 
 #import data
 publications_info <- read.csv("data/covid19_publications.csv")
@@ -35,14 +36,14 @@ country_pubs <- pubs_data %>%
   group_by(country) %>%
   filter(title!=lag(title) | is.na(lag(title))) %>%
   group_by(pub_year) %>%
-  count(country, sort = T)
+  count(country, sort = T) %>%
+  rename(count = n)
 
-country_pubs %>%
+#ggplot barchart of publications by country
+country_pub_gg <- country_pubs %>%
   slice(1:10) %>%
-  ggplot(aes(x = fct_reorder(country, n), y = n, color = country, fill = country)) +
+  ggplot(aes(x = fct_reorder(country, count), y = count, color = country, fill = country)) +
   geom_col() +
-  geom_label(aes(label = n), color = "black", fill = "white", 
-             label.padding = unit(0.1, "lines"), label.size = NA) +
   facet_grid(. ~ pub_year) +
   # Rotate graph
   coord_flip() +
@@ -53,7 +54,12 @@ country_pubs %>%
     x = "Publication Count",
     y = "Country"
   )
-  
+ 
+#interactive plotly chart of publications by country
+cpubs_plotly <- ggplotly(country_pub_gg, tooltip = "count") 
+
+cpubs_plotly
+
 
 
 #create top words barchart
@@ -64,17 +70,18 @@ common_topics_all <- pubs_data %>%
   select(!country_of_research_organization) %>%
   unnest_tokens(output = word, input = title)
 
-#remove common stop words and additional coivd related stop words
+#remove common stop words and additional covid related stop words
 common_topics <- common_topics_all %>%
   anti_join(stop_words, by = "word") %>%
-  count(word, sort = T) %>%
+  count(word, sort = T) %>% #also removed spanish stop words de/la
   filter(!word %in% c("covid" , "19", "pandemic", "sars", "cov", "2", "coronavirus", "2020", "2019",
-                      "de", "la")) #also removed spanish stop words de/la
+                      "based", "disease", "de", "la")) %>% 
+  rename(count = n)
 
-#create bar cgart of top 15 most common words in titles
-common_topics %>%
-  slice(1:15) %>%
-  ggplot(aes(x = fct_reorder(word, n), y = n, color = word, fill = word)) +
+#create bar chart of top 15 most common words in titles
+topics_gg <- common_topics %>%
+  slice(1:10) %>%
+  ggplot(aes(x = fct_reorder(word, count), y = count, color = word, fill = word)) +
   geom_col() +
   # Rotate graph
   coord_flip() +
@@ -85,3 +92,7 @@ common_topics %>%
     y = "Number of Occurences",
     x = "Topic Word"
   )
+
+#ggplot to plotly
+topics_plotly <- ggplotly(topics_gg, tooltip = "count")
+topics_plotly
