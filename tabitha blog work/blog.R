@@ -23,8 +23,6 @@ pubs_data <- pubs_info %>%
   filter(!is.na(country_of_research_organization)) %>%
   filter(country_of_research_organization != "")
 
-check <- count(pubs_data, country_of_research_organization)
-head(check)
 
 #create publication prevalence by country barchart
 country_pubs <- pubs_data %>%
@@ -34,24 +32,32 @@ country_pubs <- pubs_data %>%
   
 
 
-#create top words (selectable) table
+#create top words barchart
 data(stop_words)
 
+#seperate words from titles
 common_topics_all <- pubs_data %>%
   select(!country_of_research_organization) %>%
   unnest_tokens(output = word, input = title)
 
+#remove common stop words and additional coivd related stop words
 common_topics <- common_topics_all %>%
   anti_join(stop_words, by = "word") %>%
   count(word, sort = T) %>%
-  filter(!word %in% c("covid" , "19", "pandemic", "sars", "cov", "2", "coronavirus", "2020", "2019"))
-#also remove all non-english words?
+  filter(!word %in% c("covid" , "19", "pandemic", "sars", "cov", "2", "coronavirus", "2020", "2019",
+                      "de", "la")) #also removed spanish stop words de/la
 
+#create bar cgart of top 15 most common words in titles
 common_topics %>%
-  slice(1:10) %>%
+  slice(1:15) %>%
   ggplot(aes(x = fct_reorder(word, n), y = n, color = word, fill = word)) +
   geom_col() +
   # Rotate graph
   coord_flip() +
   guides(color = "none", 
-         fill = "none")
+         fill = "none") +
+  labs(
+    title = "Common Topics in Covid Publications",
+    y = "Number of Occurences",
+    x = "Topic Word"
+  )
