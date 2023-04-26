@@ -61,7 +61,35 @@ bigprep <- bigBoy %>%
 
 ```{r combine em}
 fullsend <- left_join(bigprep, gdiprep, by = "country")
+write.csv(fullsend, file = "data/fullsend.csv")
 #well the gdi isn't in there but i do have gdp per capita so whatever i guess. this is so annoying!
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+#hm okay let me try this a better way
+fullsend2 <- fullsend %>%
+  select(country, continent, location, date, population_density, gdp_per_capita, hospital_beds_per_thousand, cardiovasc_death_rate, diabetes_prevalence, handwashing_facilities, people_vaccinated_per_hundred, new_deaths_per_million) %>%
+  filter(date > '2020-03-10') %>%
+  mutate(daysuntildrop = 0)
+
+DSMarch <- fullsend2 %>%
+  filter(date == '2020-03-11')
+
+DSTimePrep <- fullsend2 %>%
+  filter(date > '2021-01-01') %>%
+  group_by(country) %>%
+  arrange(date) %>%
+  filter(new_deaths_per_million <= 1)
+
+t.first <- DSTimePrep[match(unique(DSTimePrep$country), DSTimePrep$country),]
+
+#OKAY! there is something HERE!!!!
+
+GettingThere <-
+
+#ok what if instead i filtered for only instances where dpm <= 1 and THEN found matches based on country
+#WAIT
+#I AM ON TO SOMETHING!
+
+```
+
