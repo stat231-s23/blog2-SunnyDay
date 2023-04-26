@@ -20,13 +20,17 @@ pubs_info <- publications_info %>%
 pubs_data <- pubs_info %>%
   select(pub_year, country_of_research_organization, title) %>%
   filter(complete.cases(.)) %>%
-  filter(!is.na(country_of_research_organization))
+  filter(!is.na(country_of_research_organization)) %>%
+  filter(country_of_research_organization != "")
 
+check <- count(pubs_data, country_of_research_organization)
+head(check)
 
 #create publication prevalence by country barchart
 country_pubs <- pubs_data %>%
-  separate(country_of_research_organization, distinct(c('Country 1', 'Country 2', 'Country 3', 'Country 4')),
-           sep = ";")
+  separate(country_of_research_organization
+           , into=c('Country 1', 'Country 2', 'Country 3', 'Country 4')
+           , sep = ";")
   
 
 

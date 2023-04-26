@@ -1,0 +1,63 @@
+---
+title: ""
+subtitle: "SAT 231: Project 2 _Shiny_App"
+author: "Lynca Jones Kaminka"
+date: "\\today"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+# set code chunk option defaults
+knitr::opts_chunk$set(
+  # display code as types
+  tidy = FALSE, 
+  # slightly smaller code font
+  size = "small",
+  # do not display messages in PDF
+  message = FALSE,
+  # set default figure width and height
+  fig.width = 5, fig.height = 3) 
+
+# improve digit and NA display 
+options(scipen = 1, knitr.kable.NA = '')
+
+# load packages
+library(shiny)
+library(shinythemes)
+#library(tidyquant)
+library(tidyverse)
+library(tidyr)
+library(ical)
+library(lubridate)
+library(kableExtra)
+library(dplyr) #for inner join, renaming columns, #rounding
+library(DT)
+library(ggrepel)
+library(tidytuesdayR)
+library(plotly)#hovering
+library(shinythemes)
+library(stringi)
+library(ggthemes)
+library(ggthemes)
+library(gridExtra) ##beautifying the graph ~ rotating the labels.
+library(knitr)
+library(ggplot2)
+library(RMariaDB)
+library(lubridate)
+
+# help with extracting the right data frames from xlsx
+library(readr)
+
+
+```
+
+
+```{r}
+
+#first data frame
+covid-worldwide <- read_csv("data/owid-covid-data.csv")
+#saveRDS(county_monthly_10, file = "data/county_monthly_data.rds")
+
+spec(covid_worldwide)
+
+```
