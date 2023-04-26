@@ -53,6 +53,8 @@ library(rvest) #for web scrapijng
 library(robotstxt) #checking if paths are allowed
 library(purrr)
 
+library(leaflet)
+
 ```
 
 
@@ -94,16 +96,21 @@ covid_worldwide_2 <- covid_worldwide %>%
     mutate(ReportMonth = as.numeric(ReportMonth))
     
     covid_worldwide_4 <- covid_worldwide_3 %>%
-    mutate(date = make_date(year = covid_worldwide_3$ReportYear,
-                          month = covid_worldwide_3$ReportMonth,
-                          day = covid_worldwide_3$ReportDay))
+    #filter(ReportYear%in%c(2021,2022))%>%
+    filter (ReportYear==2021)%>%
+    filter(ReportMonth==7)%>%
+    filter(ReportDay==15)
+    
+    covid_worldwide_5 <- covid_worldwide_4 %>%
+    mutate(date = make_date(year = covid_worldwide_4$ReportYear,
+                          month = covid_worldwide_4$ReportMonth,
+                          day = covid_worldwide_4$ReportDay))
 
     # helped me with figuring out which observations to keep and which ones to get rid of 
     #colnames(covid_worldwide_4)
     
-    covid_worldwide_5 <- covid_worldwide_4 %>%
-    filter(ReportYear%in%c(2021,2022)) 
-      
+
+  
     covid_worldwide_6 <- covid_worldwide_5 %>%
     select("iso_code" | "location"| "continent" | "total_cases_per_million" | "people_vaccinated" | "date" | "geom" | "population_density"
            | "extreme_poverty" | "diabetes_prevalence")  
@@ -148,6 +155,16 @@ mutate(country = as.character(name)
  #joining with 
  covid_worldwide_7 <- countries_worldwide_lat_long_updated %>%
  right_join(covid_worldwide_6, by=c("name" = "location"))
+ 
+ 
+########### to do ; set to zero all the values have a na tag. 
+ #covid_worldwide_7[is.na(covid_worldwide_7)] <- 0
+
+ 
+ 
+ 
+ 
+ 
  #####################################
 ####################################    
 #missing data _ remediate to this: countries that aren't present or whose names are mismatched.
