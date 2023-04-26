@@ -22,8 +22,7 @@ knitr::opts_chunk$set(
 options(scipen = 1, knitr.kable.NA = '')
 
 # load packages
-library(shiny)
-library(shinythemes)
+library(dplyr)
 #library(tidyquant)
 library(tidyverse)
 library(tidyr)
@@ -47,7 +46,12 @@ library(lubridate)
 
 # help with extracting the right data frames from xlsx
 library(readr)
+library(tidyverse)
+library(sf)
 
+library(rvest) #for web scrapijng
+library(robotstxt) #checking if paths are allowed
+library(purrr)
 
 ```
 
@@ -55,9 +59,102 @@ library(readr)
 ```{r}
 
 #first data frame
-covid-worldwide <- read_csv("data/owid-covid-data.csv")
-#saveRDS(county_monthly_10, file = "data/county_monthly_data.rds")
+covid_worldwide <- read_csv("data/owid-covid-data.csv")
 
-spec(covid_worldwide)
 
+world_map <- maps::map("world", plot = FALSE, fill = TRUE) %>%
+st_as_sf()
+
+
+
+covid_worldwide_1 <- covid_worldwide %>%
+mutate(location = as.character(location)
+, location = case_when(location == "Congo" ~ "Republic of Congo"
+, location == "Democratic Republic of Congo" ~ "Democratic Republic of the Congo"
+, location == "Cote d'Ivoire" ~ "Ivory Coast"
+, location == "Korea, Dem. Rep." ~ "North Korea"
+, location == "Korea, Rep." ~ "South Korea"
+, location == "Slovak Republic" ~ "Slovakia"
+, location == "Trinidad and Tobago" ~ "Tobago"
+#, country == "Trinidad and Tobago" ~ "Trinidad"
+, location == "United Kingdom" ~ "UK"
+, location =="United States" ~ "USA"
+, location == "Yemen, Rep." ~ "Yemen"
+, TRUE ~ location)) 
+
+#joining the two data sets: 
+covid_worldwide_2 <- covid_worldwide %>%
+  right_join(world_map, by=c("location" = "ID"))
+
+    
+    covid_worldwide_3 <- covid_worldwide_2 %>%
+    separate("date", into = c("ReportYear", "ReportMonth", "ReportDay"), sep = "-", convert=FALSE) %>%
+    mutate(ReportYear = as.numeric(ReportYear))%>%  
+    mutate(ReportDay = as.numeric(ReportDay))%>%  
+    mutate(ReportMonth = as.numeric(ReportMonth))
+    
+    covid_worldwide_4 <- covid_worldwide_3 %>%
+    mutate(date = make_date(year = covid_worldwide_3$ReportYear,
+                          month = covid_worldwide_3$ReportMonth,
+                          day = covid_worldwide_3$ReportDay))
+
+    # helped me with figuring out which observations to keep and which ones to get rid of 
+    #colnames(covid_worldwide_4)
+    
+    covid_worldwide_5 <- covid_worldwide_4 %>%
+    filter(ReportYear%in%c(2021,2022)) 
+      
+    covid_worldwide_6 <- covid_worldwide_5 %>%
+    select("iso_code" | "location"| "continent" | "total_cases_per_million" | "people_vaccinated" | "date" | "geom" | "population_density"
+           | "extreme_poverty" | "diabetes_prevalence")  
+
+#####################################
+####################################    
+#missing data _ remediate to this: countries that aren't present or whose names are mismatched.
+#missing_world_map <- covid_worldwide_1 %>%
+#anti_join(world_map, by=c("location" = "ID"))
+
+###########
+#extracting the latitudes and longitudes observations for each country .
+ # 1. Identify where the table is
+countries_worldwide_lat_long_url <- "https://developers.google.com/public-data/docs/canonical/countries_csv"
+
+# 2. Confirm bots are allowed to access the page 
+robotstxt::paths_allowed(countries_worldwide_lat_long_url)
+
+
+countries_worldwide_lat_long <- countries_worldwide_lat_long_url %>%
+read_html() %>%
+# Poems are in first table on page
+html_elements("table") %>%
+purrr::pluck(1) %>%
+html_table()
+    
+
+#standardizing countries name in the new data set. 
+ countries_worldwide_lat_long_updated <- countries_worldwide_lat_long %>%
+mutate(country = as.character(name)
+, name = case_when(country == "Congo [Republic]" ~ "Republic of Congo"
+, name == "Congo [DRC]" ~ "Democratic Republic of the Congo"
+, name == "Cote d'Ivoire" ~ "Ivory Coast"
+, name == "Slovak Republic" ~ "Slovakia"
+, name == "Trinidad and Tobago" ~ "Tobago"
+, name == "Trinidad and Tobago" ~ "Trinidad"
+, name == "United Kingdom" ~ "UK"
+, name =="United States" ~ "USA"
+, name == "Yemen, Rep." ~ "Yemen"
+, TRUE ~ name)) 
+
+ #joining with 
+ covid_worldwide_7 <- countries_worldwide_lat_long_updated %>%
+ right_join(covid_worldwide_6, by=c("name" = "location"))
+ #####################################
+####################################    
+#missing data _ remediate to this: countries that aren't present or whose names are mismatched.
+#missing_world_long_lat_values <- countries_worldwide_lat_long_updated %>%
+#anti_join(covid_worldwide_6, by=c("name" = "location"))
+
+
+#saving the final file: 
+#saveRDS(, file = ".rds")
 ```
