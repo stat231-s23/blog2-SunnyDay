@@ -1,0 +1,67 @@
+---
+title: "emmawranglecovid"
+author: "Emma Strawbridge"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(ggrepel)
+library(broom)
+library(GGally)
+
+bigBoy <- read_excel("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/oc.xlsx")
+poverT <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/pc.csv")
+GDI <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/ic.csv")
+#no way did i have to read it in like THIS that's actually so evil. anyways
+```
+
+## things to note
+
+Definition of Poverty rate: https://data.oecd.org/inequality/poverty-rate.htm#indicator-chart 
+The poverty rate is the ratio of the number of people (in a given age group) whose income falls below the poverty line; taken as half the median household income of the total population. It is also available by broad age group: child poverty (0-17 years old), working-age poverty and elderly poverty (66 year-olds or more). However, two countries with the same poverty rates may differ in terms of the relative income-level of the poor. (ended up not using this data)
+Definition of Gross national income:
+Gross national income (GNI) is defined as gross domestic product, plus net receipts from abroad of compensation of employees, property income and net taxes less subsidies on production. Compensation of employees receivable from abroad are those that are earned by residents who essentially live inside the economic territory but work abroad (this happens in border areas on a regular basis), or for people who live and work abroad for short periods (seasonal workers) and whose centre of economic interest remains in their home country. Property income receivable from/payable to abroad includes interest, dividends, and all (or part of) retained earnings of foreign enterprises owned fully (or in part) by resident enterprises (and vice versa). This indicator is based on GNI at current prices and is available in different measures: US dollars and US dollars per capita (both in current PPPs). All OECD countries compile their data according to the 2008 System of National Accounts (SNA). This indicator is less suited for comparisons over time, as developments are not only caused by real growth, but also by changes in prices and PPPs.
+
+```{r povert & gdi sort}
+#goal of this section is to only get: total poverty and whatever else i don't need OUT
+#filter for total
+#filter for 2020
+pTprep <- poverT %>%
+  filter(SUBJECT == "TOT",
+         TIME == 2020) %>%
+  select(LOCATION, Value, TIME) %>%
+  rename(country = LOCATION,
+         poverty_rate = Value)
+#okay so can't really use poverty here bc it's sooooooo incomplete. but the thought was there ig
+gdiprep <- GDI %>%
+  filter(TIME == 2020,
+         LOCATION != "EA27",
+         LOCATION != "EU27_2020") %>%
+  select(LOCATION, Value, TIME, MEASURE) %>%
+  rename(country = LOCATION,
+         gdi = Value)
+#this at least has more. 50 countries has got to be better than THIRTEEN
+```
+
+```{r big boy sort}
+#oh brother
+#goal of this section is remove useless variables
+bigprep <- bigBoy %>%
+  rename(country = iso_code) %>%
+  mutate(date = ymd(date)) %>%
+  select(-new_cases_smoothed, -new_cases_smoothed_per_million, -new_deaths_smoothed, -new_deaths_smoothed_per_million, -new_tests_smoothed, -new_tests_smoothed_per_thousand, -new_vaccinations_smoothed, -new_vaccinations_smoothed_per_million, -new_people_vaccinated_smoothed, -new_people_vaccinated_smoothed_per_hundred) 
+#still totally a ton of data and not sure the ymd worked but whatever let's just combine
+```
+
+```{r combine em}
+fullsend <- left_join(bigprep, gdiprep, by = "country")
+#well the gdi isn't in there but i do have gdp per capita so whatever i guess. this is so annoying!
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
