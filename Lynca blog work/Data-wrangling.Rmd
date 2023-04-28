@@ -156,13 +156,31 @@ mutate(country = as.character(name)
  covid_worldwide_7 <- countries_worldwide_lat_long_updated %>%
  right_join(covid_worldwide_6, by=c("name" = "location"))
  
+
+ #transforming it into a leaflet object: 
+ covid_worldwide_7_leaflet <- covid_worldwide_7 %>%
+   st_as_sf()
+ 
+ my_palette <- colorNumeric ( palette = "YIGnBu", 
+                              domain = covid_worldwide_7_leaflet$people_vaccinated)
+ 
+ 
+ leaflet (data = covid_worldwide_7_leaflet) %>%
+   addTiles() %>%
+   addPolygons (
+     fillColor = ~my_palette(people_vaccinated), 
+     stroke = FALSE, 
+     popup = ~ glue:: glue("Country_name: {str_to_title(name)} <br>"))
+
+     
+     
  
 ########### to do ; set to zero all the values have a na tag. 
  #covid_worldwide_7[is.na(covid_worldwide_7)] <- 0
 
  
- 
- 
+#save the datasets to Rds files
+saveRDS(covid_worldwide_7_leaflet, file = "data/covid_worldwide_7_leaflet.Rds")
  
  
  #####################################
