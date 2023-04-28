@@ -165,6 +165,8 @@ mutate(country = as.character(name)
                               domain = covid_worldwide_7_leaflet$people_vaccinated)
  
  
+
+ 
  leaflet (data = covid_worldwide_7_leaflet) %>%
    addTiles() %>%
    addPolygons (
