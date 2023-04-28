@@ -1,0 +1,16 @@
+Intellectual Honesty: 
+Sources used:
+
+1. 
+https://rstudio.github.io/leaflet/shiny.html#:~:text=Shiny%20is%20a%20web%20framework,for%20integrating%20with%20Shiny%20applications.
+
+2.
+Coloring categorical data: 
+https://rstudio.github.io/leaflet/colors.html
+
+3.
+Adding a dynamic legend:  https://stackoverflow.com/questions/45098145/r-error-in-get-object-xts-chob-not-found
+
+4.
+Using tabsets: 
+https://shiny.rstudio.com/articles/layout-guide.html

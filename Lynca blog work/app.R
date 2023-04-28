@@ -101,10 +101,14 @@ server <- function(input, output, session) {
         color = "#b2aeae", 
         stroke = FALSE, 
         weight = 1, 
-        fillOpacity = 0, 
-        popup = ~ glue:: glue("Country_name: {str_to_title(name)} <br>"))
+        fillOpacity = 0.7, 
+        popup = ~ glue:: glue("Country_name: {str_to_title(name)} <br>")) %>%
       
-  
+    leaflet::addLegend(pal = my_palette 
+                       ,values = ~mydata()[[input$poverty_Indicator]] 
+                       ,opacity = 0.7
+                       ,position = 'bottomright' 
+                       ,title = poverty_indicator_names[poverty_indicator_values == input$poverty_Indicator])
       
       #addMarkers ( data = covid_worldwide_obs, lat = ~latitude, lng = ~longitude)
   })
