@@ -14,3 +14,10 @@ Adding a dynamic legend:  https://stackoverflow.com/questions/45098145/r-error-i
 4.
 Using tabsets: 
 https://shiny.rstudio.com/articles/layout-guide.html
+
+
+5. The reactivity: 
+https://towardsdatascience.com/create-interactive-map-applications-in-r-and-r-shiny-for-exploring-geospatial-data-96b0f9692f0f
+
+
+6. Adding a date selector. 

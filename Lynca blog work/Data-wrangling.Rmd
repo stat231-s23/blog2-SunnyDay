@@ -53,8 +53,11 @@ library(rvest) #for web scrapijng
 library(robotstxt) #checking if paths are allowed
 library(purrr)
 
+#centroids. 
 library(leaflet)
-
+library(rgeos)
+library(rworldmap)
+library(rworldxtra)
 ```
 
 
@@ -67,6 +70,18 @@ covid_worldwide <- read_csv("data/owid-covid-data.csv")
 world_map <- maps::map("world", plot = FALSE, fill = TRUE) %>%
 st_as_sf()
 
+
+
+# get world map
+wmap <- getMap(resolution="high")
+
+# get centroids
+centroids_df <- gCentroid(wmap, byid=TRUE)
+
+#names(centroids_df)
+
+# get a data.frame with centroids
+#centroids_df <- as.data.frame(centroids) 
 
 
 covid_worldwide_1 <- covid_worldwide %>%
@@ -96,10 +111,8 @@ covid_worldwide_2 <- covid_worldwide %>%
     mutate(ReportMonth = as.numeric(ReportMonth))
     
     covid_worldwide_4 <- covid_worldwide_3 %>%
-    #filter(ReportYear%in%c(2021,2022))%>%
-    filter (ReportYear==2021)%>%
-    filter(ReportMonth==7)%>%
-    filter(ReportDay==15)
+    filter(ReportYear%in%c(2021,2022))
+
     
     covid_worldwide_5 <- covid_worldwide_4 %>%
     mutate(date = make_date(year = covid_worldwide_4$ReportYear,
@@ -117,11 +130,13 @@ covid_worldwide_2 <- covid_worldwide %>%
 
 #####################################
 ####################################    
+####### To do: 
 #missing data _ remediate to this: countries that aren't present or whose names are mismatched.
 #missing_world_map <- covid_worldwide_1 %>%
 #anti_join(world_map, by=c("location" = "ID"))
 
-###########
+######################################
+    
 #extracting the latitudes and longitudes observations for each country .
  # 1. Identify where the table is
 countries_worldwide_lat_long_url <- "https://developers.google.com/public-data/docs/canonical/countries_csv"
@@ -166,17 +181,10 @@ mutate(country = as.character(name)
  
  
 
- 
- leaflet (data = covid_worldwide_7_leaflet) %>%
-   addTiles() %>%
-   addPolygons (
-     fillColor = ~my_palette(people_vaccinated), 
-     stroke = FALSE, 
-     popup = ~ glue:: glue("Country_name: {str_to_title(name)} <br>"))
+
 
      
      
- 
 ########### to do ; set to zero all the values have a na tag. 
  #covid_worldwide_7[is.na(covid_worldwide_7)] <- 0
 

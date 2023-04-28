@@ -7,6 +7,8 @@ library(shiny)
 library(dygraphs)
 library(xts)
 library(shinythemes)
+library(shiny) #for the date input
+library(shinyWidgets)
 
 #import data
 covid_worldwide_obs <- readRDS("data/covid_worldwide_7_leaflet.Rds")
@@ -37,13 +39,21 @@ tabPanel (
   sidebarLayout(
     sidebarPanel(
       
+      dateInput ( inputId = "selected_date"
+                  , label = "Select a date:"
+                  , value = min(covid_worldwide_obs$date)
+                  ,  min = min(covid_worldwide_obs$date)
+                  , max = max(covid_worldwide_obs$date)
+          
+        
+      ), 
       selectInput(inputId = "id_continent_choices"
                      , label = "Identify which continents you want to focus your analysis on:"
                      , choices = continent_choices
                      , selected = NULL
                      , multiple = FALSE),
     
-    selectInput ( inputId = "poverty_Indicator", 
+       selectInput ( inputId = "poverty_Indicator", 
                   label = "Choose an indicator of poverty", 
                   choices = poverty_indicator_values, 
                   selected = NULL)
@@ -76,9 +86,16 @@ server <- function(input, output, session) {
 
   mydata <- reactive (
     {
-      return (filter(covid_worldwide_obs, continent %in% input$id_continent_choices))
+      return (filter(covid_worldwide_obs, continent %in% input$id_continent_choices, date == input$selected_date))
     }
   )
+  
+  selected_zone <- reactive({
+    p <- input$Zone_shape_click
+    centroid_lat <- mean(mydata()[mydata()$id == p$id, "latitude"])
+    centroid_lon <- mean(mydata()[mydata()$id == p$id, "longitude"])
+    data.frame(id = p$id, latitude = centroid_lat, longitude = centroid_lon)
+  })
   
   points <- eventReactive(input$recalc, {
    # cbind(rnorm(40) * 2 + 13, rnorm(40) + 48)
@@ -112,40 +129,17 @@ server <- function(input, output, session) {
       
       #addMarkers ( data = covid_worldwide_obs, lat = ~latitude, lng = ~longitude)
   })
+  
+  output$linegraph <- renderPlot({
+    ggplot(data = covid_worldwide_obs, aes(x = covid_worldwide_obs$date, y = covid_worldwide_obs$total_cases_per_million)) +                                   
+      
+      geom_line(aes(color= covid_worldwide_obs$name)) + 
+      
+      geom_point(aes(color= covid_worldwide_obs$name))  
+    
+    
+  })
 }
 
-#print(mydata()[[input$poverty_Indicator]])
-
-#server <- function(input, output, session) {
-  
- # points <- eventReactive(input$recalc, {
-   
- # }, ignoreNULL = FALSE)
-  
-  #output$mymap <- renderLeaflet({
-    
-    #covid_worldwide_obs_transformed <- st_transform(covid_worldwide_obs, 4326)
-    
-   # my_palette <- colorNumeric(
-    #  palette = "YlGnBu", 
-    #  domain = covid_worldwide_obs_transformed[[input$poverty_Indicator]]
-   # )
-    
-   # leaflet(data = covid_worldwide_obs_transformed) %>%
-    #  addProviderTiles(providers$Stamen.TonerLite,
-     #                  options = providerTileOptions(noWrap = TRUE)
-   #   ) %>%
-   #   addPolygons (
-    #    fillColor = ~my_palette(covid_worldwide_obs_transformed[[input$poverty_Indicator]]),
-    #    color = "#b2aeae", 
-    #    stroke = FALSE, 
-    #    popup = ~ glue:: glue("Country_name: {str_to_title(name)} <br>") %>%
-    # addLegend(pal = my_palette,
-    #          values = covid_worldwide_obs_transformed[[input$poverty_Indicator]],
-     #         position = "bottomright",
-     #         title = poverty_indicator_names[poverty_indicator_values == input$poverty_Indicator]))
-      #addMarkers ( data = covid_worldwide_obs, lat = ~latitude, lng = ~longitude)
- # })
-#}
 
 shinyApp(ui, server)
