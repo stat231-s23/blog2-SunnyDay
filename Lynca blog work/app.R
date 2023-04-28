@@ -41,7 +41,7 @@ tabPanel (
                      , label = "Identify which continents you want to focus your analysis on:"
                      , choices = continent_choices
                      , selected = NULL
-                     , multiple = TRUE),
+                     , multiple = FALSE),
     
     selectInput ( inputId = "poverty_Indicator", 
                   label = "Choose an indicator of poverty", 
@@ -88,16 +88,16 @@ server <- function(input, output, session) {
     
     my_palette <- colorNumeric(
       palette = "YlGnBu", 
-      domain = covid_worldwide_obs[[input$poverty_Indicator]]
+      domain = mydata()[[input$poverty_Indicator]]
     )
     
-    leaflet(data = covid_worldwide_obs) %>%
+    leaflet(data = mydata()) %>%
       addProviderTiles(providers$Stamen.TonerLite,
                       options = providerTileOptions(noWrap = TRUE)
       ) %>%
       
      addPolygons (
-        fillColor = ~my_palette(covid_worldwide_obs[[input$poverty_Indicator]]),
+       fillColor = ~my_palette(mydata()[[input$poverty_Indicator]]),
         color = "#b2aeae", 
         stroke = FALSE, 
         weight = 1, 
@@ -109,6 +109,8 @@ server <- function(input, output, session) {
       #addMarkers ( data = covid_worldwide_obs, lat = ~latitude, lng = ~longitude)
   })
 }
+
+#print(mydata()[[input$poverty_Indicator]])
 
 #server <- function(input, output, session) {
   
