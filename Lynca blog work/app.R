@@ -129,7 +129,7 @@ server <- function(input, output, session) {
   })
   
   output$linegraph <- renderPlot({
-    ggplot(data = mydata2(), aes_string(x="date", y=input$poverty_Indicator, color="name")) +                                   
+    ggplot(data = mydata2(), aes(x=date, y=total_cases_per_million, color=name)) +                                   
       geom_line() + 
       geom_point()  
   })
