@@ -9,13 +9,10 @@ library(xts)
 library(shinythemes)
 library(shiny) #for the date input
 library(shinyWidgets)
+library(shinycssloaders)
 
 #import data
 covid_worldwide_obs <- readRDS("data/covid_worldwide_7_leaflet.Rds")
-
-
-library(shiny)
-library(leaflet)
 
 r_colors <- rgb(t(col2rgb(colors()) / 255))
 names(r_colors) <- colors()
@@ -23,8 +20,6 @@ names(r_colors) <- colors()
 
 #restricting the analysis to a choice of continet: 
 continent_choices <- unique(covid_worldwide_obs$continent)
-
-
 
 #gathering some observations: 
 poverty_indicator_names <- c("Population Density (persons per km²)", "Extreme Poverty ($per day)", "Diabetes Prevalence")
@@ -42,7 +37,7 @@ tabPanel (
       dateInput ( inputId = "selected_date"
                   , label = "Select a date:"
                   , value = min(covid_worldwide_obs$date)
-                  ,  min = min(covid_worldwide_obs$date)
+                  , min = min(covid_worldwide_obs$date)
                   , max = max(covid_worldwide_obs$date)
           
         
@@ -53,7 +48,7 @@ tabPanel (
                      , selected = NULL
                      , multiple = FALSE),
     
-       selectInput ( inputId = "poverty_Indicator", 
+       selectInput(inputId = "poverty_Indicator", 
                   label = "Choose an indicator of poverty", 
                   choices = poverty_indicator_values, 
                   selected = NULL)
@@ -84,11 +79,10 @@ tabPanel (
   
 server <- function(input, output, session) {
 
-  mydata <- reactive (
-    {
-      return (filter(covid_worldwide_obs, continent %in% input$id_continent_choices, date == input$selected_date))
-    }
-  )
+  mydata <- reactive ({
+      dat <- covid_worldwide_obs %>%
+        filter(continent %in% input$id_continent_choices & date == input$selected_date)
+  })
   
   selected_zone <- reactive({
     p <- input$Zone_shape_click
@@ -108,36 +102,36 @@ server <- function(input, output, session) {
       domain = mydata()[[input$poverty_Indicator]]
     )
     
-    leaflet(data = mydata()) %>%
+    map <- leaflet(data = mydata()) %>%
       addProviderTiles(providers$Stamen.TonerLite,
-                      options = providerTileOptions(noWrap = TRUE)
-      ) %>%
-      
-     addPolygons (
-       fillColor = ~my_palette(mydata()[[input$poverty_Indicator]]),
+                      options = providerTileOptions(noWrap = TRUE)) %>%
+      addPolygons (
+        fillColor = ~my_palette(mydata()[[input$poverty_Indicator]]),
         color = "#b2aeae", 
         stroke = FALSE, 
         weight = 1, 
         fillOpacity = 0.7, 
         popup = ~ glue:: glue("Country_name: {str_to_title(name)} <br>")) %>%
-      
-    leaflet::addLegend(pal = my_palette 
+      leaflet::addLegend(pal = my_palette 
                        ,values = ~mydata()[[input$poverty_Indicator]] 
                        ,opacity = 0.7
                        ,position = 'bottomright' 
                        ,title = poverty_indicator_names[poverty_indicator_values == input$poverty_Indicator])
+    
+    return(map)
       
       #addMarkers ( data = covid_worldwide_obs, lat = ~latitude, lng = ~longitude)
   })
   
+  mydata2 <- reactive ({
+    dat <- covid_worldwide_obs %>%
+      filter(continent %in% input$id_continent_choices)
+  })
+  
   output$linegraph <- renderPlot({
-    ggplot(data = covid_worldwide_obs, aes(x = covid_worldwide_obs$date, y = covid_worldwide_obs$total_cases_per_million)) +                                   
-      
-      geom_line(aes(color= covid_worldwide_obs$name)) + 
-      
-      geom_point(aes(color= covid_worldwide_obs$name))  
-    
-    
+    ggplot(data = mydata2(), aes_string(x="date", y=input$poverty_Indicator, color="name")) +                                   
+      geom_line() + 
+      geom_point()  
   })
 }
 
