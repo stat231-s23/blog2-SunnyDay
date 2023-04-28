@@ -20,7 +20,7 @@ data <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/da
 
 ```{r picking vars, determining cluster size}
 covidCountries <- data %>% 
-  select(population_density, gdp_per_capita, cardiovasc_death_rate, diabetes_prevalence, daystil) %>%
+  select(country, population_density, gdp_per_capita, cardiovasc_death_rate, diabetes_prevalence, daystil) %>%
   drop_na()
 
 # Iterate through clustering algorithm for 10 different values of k
@@ -54,10 +54,37 @@ cc_kmeans4_summaries <- tidy(cc_kmeans4)
 cc_kmeans4_summaries
 
 #seeing that daystil is super similar and more like 2 groups? ill keep them different bc i see big differences between gdp and pop density
+
+fit <- lm(daystil ~ gdp_per_capita  + population_density, data=covidCountries)
+summary(fit)
+
 ```
 
 ```{r viz}
 #to do: visualizations for pop density, gdp, with daystil
 #consider comparing to mlr model
+
+ccvizdf <- augment(cc_kmeans4, covidCountries)
+
+# Visualize the cluster assignments and centroids
+ggplot(ccvizdf, aes(x = daystil, y = gdp_per_capita)) + 
+  geom_point(aes(color = .cluster, shape = .cluster)) +
+  geom_text_repel(aes(label = country, color = .cluster), 
+                  size = 3, max.overlaps = 15, show.legend = FALSE) +
+  #scale_x_continuous(breaks = scales::breaks_width(25)) +
+  #scale_y_continuous(breaks = scales::breaks_width(25)) +
+  
+  # Add centroid labels to plot
+  geom_label(data = cc_kmeans4_summaries, aes(label = cluster, color = cluster),
+             size = 3,
+             label.r = unit(0.5, "lines"),
+             label.size = 1.5,
+             label.padding = unit(0.5, "lines"),
+             show.legend = FALSE) +
+  labs(x = "Days post March 11 2020 (not checking the year 2020) to get to < 1 death per million",
+       y = "GDP in USD per Capita",
+       color = "Cluster",
+       shape = "Cluster") +
+  theme_classic()
 ```
 
