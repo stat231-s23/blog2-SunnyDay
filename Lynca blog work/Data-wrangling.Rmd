@@ -171,6 +171,12 @@ mutate(country = as.character(name)
  covid_worldwide_7 <- countries_worldwide_lat_long_updated %>%
  right_join(covid_worldwide_6, by=c("name" = "location"))
  
+covid_worldwide_7 [is.na(covid_worldwide_7)] <- 0
+
+#identifying the columns with numeric types, and replacing the observation from na to zero in that case. 
+covid_worldwide_7 <- covid_worldwide_7 %>%
+  mutate_if(is.numeric, ~ifelse(is.na(.), 0, .))
+
 
  #transforming it into a leaflet object: 
  covid_worldwide_7_leaflet <- covid_worldwide_7 %>%
@@ -180,11 +186,6 @@ mutate(country = as.character(name)
                               domain = covid_worldwide_7_leaflet$people_vaccinated)
  
  
-
-
-
-     
-     
 ########### to do ; set to zero all the values have a na tag. 
  #covid_worldwide_7[is.na(covid_worldwide_7)] <- 0
 

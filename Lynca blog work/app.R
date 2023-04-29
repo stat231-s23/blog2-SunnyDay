@@ -10,6 +10,9 @@ library(shinythemes)
 library(shiny) #for the date input
 library(shinyWidgets)
 library(shinycssloaders)
+#required packages: 
+library(zoo)
+library(base)
 
 #import data
 covid_worldwide_obs <- readRDS("data/covid_worldwide_7_leaflet.Rds")
@@ -80,8 +83,11 @@ tabPanel (
 server <- function(input, output, session) {
 
   mydata <- reactive ({
-      dat <- covid_worldwide_obs %>%
-        filter(continent %in% input$id_continent_choices & date == input$selected_date)
+      #data <- covid_worldwide_obs %>%
+        #filter(continent %in% input$id_continent_choices & date == input$selected_date) %>%
+        #select(name, latitude, longitude, id, input$poverty_Indicator)
+        
+    return (filter(covid_worldwide_obs,continent %in% input$id_continent_choices & date == input$selected_date))
   })
   
   selected_zone <- reactive({
@@ -100,6 +106,7 @@ server <- function(input, output, session) {
     my_palette <- colorNumeric(
       palette = "YlGnBu", 
       domain = mydata()[[input$poverty_Indicator]]
+      #domain = as.numeric(mydata()[,input$poverty_Indicator])
     )
     
     map <- leaflet(data = mydata()) %>%
@@ -126,12 +133,15 @@ server <- function(input, output, session) {
   mydata2 <- reactive ({
     dat <- covid_worldwide_obs %>%
       filter(continent %in% input$id_continent_choices)
+     # return(filter(covid_worldwide_obs, continent %in% input$id_continent_choices))
   })
   
+  
+  #adding a date range section that will only be used for when we get into the other tab. 
   output$linegraph <- renderPlot({
     ggplot(data = mydata2(), aes(x=date, y=total_cases_per_million, color=name)) +                                   
-      geom_line() + 
-      geom_point()  
+      geom_line(aes(color= mydata2()$name)) + 
+      geom_point(aes(color= mydata2()$name))  
   })
 }
 
