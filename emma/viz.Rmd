@@ -2,7 +2,9 @@
 title: "building viz"
 author: "Emma Strawbridge"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -15,22 +17,39 @@ library(ggrepel)
 library(broom)
 library(GGally)
 library(purrr)
+library(kableExtra)
+library(plotly)
+library(scales)
+#my laptop is funky and particular and only wants to read files in this way >:( But I'm pretty sure that if you set your session to the appropriate folder (blog2-SunnyDay) and then read from /emma/data/biggie.csv
 data <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/biggie.csv")
 ```
 
-```{r picking vars, determining cluster size}
+```{r picking vars, include=FALSE}
+#Picking information for clustered data
 covidCountries <- data %>% 
-  select(country, population_density, gdp_per_capita, cardiovasc_death_rate, diabetes_prevalence, daystil) %>%
+  select(location, country, population_density, gdp_per_capita, cardiovasc_death_rate, diabetes_prevalence, daystil) %>%
   drop_na()
+#Without Russia
 covidCountriesNoR <- covidCountries %>%
   filter(country != "RUS")
-  
-covidCountriesFor <- covidCountries %>%
-  select(-country)
-covidCountriesForNoR <- covidCountriesNoR %>%
-  select(-country)
+#Without any day 1 countries
+covidCountriesNoMin <- covidCountries %>%
+  filter(daystil > 297)
 
-# Iterate through clustering algorithm for 10 different values of k
+#Prepping data for clustering
+covidCountriesFor <- covidCountries %>%
+  select(-country, -location)
+#Without Russia
+covidCountriesForNoR <- covidCountriesNoR %>%
+  select(-country, -location)
+#Without any day 1 countries
+covidCountriesForNoMin <- covidCountriesNoMin %>%
+  select(-country, -location)
+
+```
+
+``` {r determining cluster size (with Russia), echo=FALSE}
+# Iterate through clustering algorithm for 10 different values of k (with Russia)
 elbow_plot <- tibble(k = 1:10) %>%
   mutate(
     kmeans_results = purrr::map(k, ~kmeans(covidCountriesFor, .x)), 
@@ -44,12 +63,13 @@ ggplot(elbow_plot, aes(x = k, y = tot.withinss)) +
   geom_line() +
   scale_x_continuous(breaks = 1:10) +
   labs(x = "Number of clusters (k)", 
-       y = "Total within-cluster sum of squares")
+       y = "Total within-cluster sum of squares") +
+  ggtitle("Elbow plot to determine appropirate cluster size")
+```
 
-#ok so 3 is good but 4 is better and I think I'll just do 4 becuase why not, also bcs it's maybe more interesting with more groups? idk i make the mf rules here sooooo
-
-#trying without russia
-# Iterate through clustering algorithm for 10 different values of k
+``` {r determining cluster size (without Russia), include = FALSE, echo=FALSE}
+#Trying without Russia
+#Iterate through clustering algorithm for 10 different values of k
 elbow_plot <- tibble(k = 1:10) %>%
   mutate(
     kmeans_results = purrr::map(k, ~kmeans(covidCountriesForNoR, .x)), 
@@ -57,7 +77,7 @@ elbow_plot <- tibble(k = 1:10) %>%
   # Turn `glanced` list-column into regular tibble columns
   unnest(cols = c(glanced))
 
-# Construct elbow plot
+#Construct elbow plot
 ggplot(elbow_plot, aes(x = k, y = tot.withinss)) +
   geom_point() + 
   geom_line() +
@@ -66,46 +86,45 @@ ggplot(elbow_plot, aes(x = k, y = tot.withinss)) +
        y = "Total within-cluster sum of squares")
 ```
 
-```{r kmeans}
-# Perform k-means clustering with k = 4
+```{r performing kmeans clustering, echo=FALSE}
 set.seed(420) #blaze it 
               #I'M KIDDING
 
-cc_kmeans4 <- covidCountriesFor %>% 
-  kmeans(centers = 4, nstart = 20)
-
-# Summarize kmeans object components
-cc_kmeans4_summaries <- tidy(cc_kmeans4)
-cc_kmeans4_summaries
-
-#seeing that daystil is super similar and more like 2 groups? ill keep them different bc i see big differences between gdp and pop density
-
-# Perform k-means clustering with k = 3
-
+# Perform k-means clustering with k = 3 (This is what I ended up using)
 cc_kmeans3 <- covidCountriesFor %>% 
   kmeans(centers = 3, nstart = 20)
 
 # Summarize kmeans object components
 cc_kmeans3_summaries <- tidy(cc_kmeans3)
-cc_kmeans3_summaries
+#cc_kmeans3_summaries
+kmeans3table <- as.data.frame(cc_kmeans3_summaries)
+kmeans3table <- kmeans3table %>%
+  select(cluster, size, daystil, gdp_per_capita, population_density, cardiovasc_death_rate, diabetes_prevalence, withinss) %>%
+  rename("Cluster" = cluster, "Cluster Size" = size, "Days until Recovery" = daystil
+         , "GDP per Capita" = gdp_per_capita, "Population Density" = population_density
+         , "Cardiovascular Death Rate" = cardiovasc_death_rate, "Diabetes Prevalence" = diabetes_prevalence
+         , "Withins" = withinss)
 
-# Perform k-means clustering with k = 2
+kmeans3table %>%
+  kbl(caption = "Cluster Characteristics") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
 
-cc_kmeans2 <- covidCountriesFor %>% 
-  kmeans(centers = 2, nstart = 20)
-
-# Summarize kmeans object components
-cc_kmeans2_summaries <- tidy(cc_kmeans2)
-cc_kmeans2_summaries
 
 # Perform k-means clustering with k = 3, no russia
-
 cc_kmeans3NoR <- covidCountriesForNoR %>% 
   kmeans(centers = 3, nstart = 20)
 
 # Summarize kmeans object components
 cc_kmeans3NoR_summaries <- tidy(cc_kmeans3NoR)
-cc_kmeans3NoR_summaries
+#cc_kmeans3NoR_summaries
+
+# Perform k-means clustering with k = 4, no day 1 countries
+cc_kmeans3NoMin <- covidCountriesForNoMin %>% 
+  kmeans(centers = 3, nstart = 20)
+
+# Summarize kmeans object components
+cc_kmeans3NoMin_summaries <- tidy(cc_kmeans3NoMin)
+#cc_kmeans3NoMin_summaries
 
 
 fit <- lm(daystil ~ gdp_per_capita  + population_density, data=covidCountries)
@@ -113,91 +132,32 @@ summary(fit)
 
 ```
 
-```{r viz}
-#to do: visualizations for pop density, gdp, with daystil
-#consider comparing to mlr model
+```{r viz, warning=FALSE, echo=FALSE}
 
-ccvizdf4 <- augment(cc_kmeans4, covidCountries)
+ccvizdf3 <- augment(cc_kmeans3, covidCountries)
 
-# Visualize the cluster assignments and centroids
-ggplot(ccvizdf4, aes(x = daystil, y = gdp_per_capita)) + 
+#Visualize the cluster assignments and centroids
+finalviz <- ggplot(ccvizdf3, aes(x = daystil, y = gdp_per_capita
+                                 , text = paste(location,", GDP per Capita: $",gdp_per_capita))) + 
   geom_point(aes(color = .cluster, shape = .cluster)) +
   geom_text_repel(aes(label = country, color = .cluster), 
                   size = 3, max.overlaps = 15, show.legend = FALSE) +
-  #scale_x_continuous(breaks = scales::breaks_width(25)) +
-  #scale_y_continuous(breaks = scales::breaks_width(25)) +
-  
-  # Add centroid labels to plot
-  geom_label(data = cc_kmeans4_summaries, aes(label = cluster, color = cluster),
-             size = 3,
-             label.r = unit(0.5, "lines"),
-             label.size = 1.5,
-             label.padding = unit(0.5, "lines"),
-             show.legend = FALSE) +
-  labs(x = "Days post March 11 2020 (not checking the year 2020) to get to < 1 death per million",
+  labs(x = "Days until Recovery",
        y = "GDP in USD per Capita",
        color = "Cluster",
        shape = "Cluster") +
-  theme_classic()
+  theme_classic() +
+  ggtitle("Cluster display of Days until Recovery vs GDP per Capita")
 
-ccvizdf3 <- augment(cc_kmeans3, covidCountries) #this one sucks
-
-# Visualize the cluster assignments and centroids
-ggplot(ccvizdf3, aes(x = daystil, y = population_density)) + 
-  geom_point(aes(color = .cluster, shape = .cluster)) +
-  geom_text_repel(aes(label = country, color = .cluster), 
-                  size = 3, max.overlaps = 15, show.legend = FALSE) +
-  xlim(300,600) +
-  ylim(0,3000) +
-  #scale_x_continuous(breaks = scales::breaks_width(25)) +
-  #scale_y_continuous(breaks = scales::breaks_width(25)) +
-  
-  # Add centroid labels to plot
-  geom_label(data = cc_kmeans3_summaries, aes(label = cluster, color = cluster),
-             size = 3,
-             label.r = unit(0.5, "lines"),
-             label.size = 1.5,
-             label.padding = unit(0.5, "lines"),
-             show.legend = FALSE) +
-  labs(x = "Days post March 11 2020 (not checking the year 2020) to get to < 1 death per million",
-       y = "Population Density",
-       color = "Cluster",
-       shape = "Cluster") +
-  theme_classic()
-
-ccvizdf2 <- augment(cc_kmeans2, covidCountries)
-
-# Visualize the cluster assignments and centroids
-ggplot(ccvizdf2, aes(x = daystil, y = gdp_per_capita)) + 
-  geom_point(aes(color = .cluster, shape = .cluster)) +
-  geom_text_repel(aes(label = country, color = .cluster), 
-                  size = 3, max.overlaps = 15, show.legend = FALSE) +
-  #scale_x_continuous(breaks = scales::breaks_width(25)) +
-  #scale_y_continuous(breaks = scales::breaks_width(25)) +
-  
-  # Add centroid labels to plot
-  geom_label(data = cc_kmeans2_summaries, aes(label = cluster, color = cluster),
-             size = 3,
-             label.r = unit(0.5, "lines"),
-             label.size = 1.5,
-             label.padding = unit(0.5, "lines"),
-             show.legend = FALSE) +
-  labs(x = "Days post March 11 2020 (not checking the year 2020) to get to < 1 death per million",
-       y = "GDP in USD per Capita",
-       color = "Cluster",
-       shape = "Cluster") +
-  theme_classic()
+ggplotly(finalviz, tooltip = "text") #set hover info
 
 ccvizdf3NoR <- augment(cc_kmeans3NoR, covidCountriesNoR)
 
 # Visualize the cluster assignments and centroids
-ggplot(ccvizdf3NoR, aes(x = daystil, y = gdp_per_capita)) + 
+noRussiaviz <- ggplot(ccvizdf3NoR, aes(x = daystil, y = gdp_per_capita)) + 
   geom_point(aes(color = .cluster, shape = .cluster)) +
   geom_text_repel(aes(label = country, color = .cluster), 
                   size = 3, max.overlaps = 15, show.legend = FALSE) +
-  #scale_x_continuous(breaks = scales::breaks_width(25)) +
-  #scale_y_continuous(breaks = scales::breaks_width(25)) +
-  
   # Add centroid labels to plot
   geom_label(data = cc_kmeans3NoR_summaries, aes(label = cluster, color = cluster),
              size = 3,
