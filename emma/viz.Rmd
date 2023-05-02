@@ -147,14 +147,15 @@ finalviz <- ggplot(ccvizdf3, aes(x = daystil, y = gdp_per_capita
        color = "Cluster",
        shape = "Cluster") +
   theme_classic() +
-  ggtitle("Cluster display of Days until Recovery vs GDP per Capita")
+  ggtitle("Cluster display of Days until Recovery vs GDP per Capita") 
 
 ggplotly(finalviz, tooltip = "text") #set hover info
 
+#No Russia####
 ccvizdf3NoR <- augment(cc_kmeans3NoR, covidCountriesNoR)
 
 # Visualize the cluster assignments and centroids
-noRussiaviz <- ggplot(ccvizdf3NoR, aes(x = daystil, y = gdp_per_capita)) + 
+noRussiaviz <- ggplot(ccvizdf3NoR, aes(x = daystil, y = gdp_per_capita, text = paste(location,", GDP per Capita: $",gdp_per_capita))) + 
   geom_point(aes(color = .cluster, shape = .cluster)) +
   geom_text_repel(aes(label = country, color = .cluster), 
                   size = 3, max.overlaps = 15, show.legend = FALSE) +
@@ -170,5 +171,7 @@ noRussiaviz <- ggplot(ccvizdf3NoR, aes(x = daystil, y = gdp_per_capita)) +
        color = "Cluster",
        shape = "Cluster") +
   theme_classic()
+
+#ggplotly(noRussiaviz, tooltip = "text")
 ```
 
