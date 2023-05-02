@@ -17,23 +17,25 @@ options(knitr.kable.NA = '')
 
 # Load packages
 library(tidyverse)
-
+library(lubridate)
+library(dplyr)
+library(readxl)
+library(ggrepel)
+library(broom)
+library(GGally)
+library(purrr)
+library(kableExtra)
+library(plotly)
+library(scales)
+#my laptop is funky and particular and only wants to read files in this way >:( But I'm pretty sure that if you set your session to the appropriate folder (blog2-SunnyDay) and then read from /emma/data/biggie.csv
+data <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/biggie.csv")
 ```
 
-# Intro
+# Exploring worldwide Covid Data!
 
 This is an R Markdown blog template. This document will be knit to HTML to produce a webpage that will be hosted publicly via GitHub.
 
 ## Website publication work flow
-
-1. Edit Rmd
-
-2. Knit to HTML to view progress. You may need to click "Open in Browser" for some content to show (sometimes content won't show until you actually push your changes to GitHub and view the published website).
-
-3. Commit and push changes when you are ready. The website may take a couple minutes to update automatically after the push, but you may need to clear your browser's cache or view the page in a private/incognito window to see the changes more quickly. 
-
-
-# Content
 
 You can include text, `code`, and output as usual. Remember to take full advantage of Markdown and follow our [Style Guide](https://acstat231-f22.github.io/home/style-guide.html#Text_narration).
 
@@ -52,262 +54,132 @@ Examples and additional guidance are provided below.
 Take note of the the default code chunk options in the `setup` code chunk. For example, unlike the rest of the Rmd files we worked in this semester, the default code chunk option is `echo = FALSE`, so you will need to set `echo  = TRUE` for any code chunks you would like to display in the blog. You should be thoughtful and intentional about the code you choose to display. 
 
 
-## Links 
-
-You can include [links](https://www.datadreaming.org/post/r-markdown-theme-gallery/) using Markdown syntax as shown. 
-
-You should include links to relevant sites as you write. You should additionally include a list of references as the end of your blog with full citations (and relevant links).
+## Tabitha
 
 
-## Visualizations 
 
-Visualizations, particularly interactive ones, will be well-received. That said, do not overuse visualizations. You may be better off with one complicated but well-crafted visualization as opposed to many quick-and-dirty plots. Any plots should be well-thought-out, properly labeled, informative, and visually appealing.
+## Lynca
 
-If you want to include dynamic visualizations or tables, you should explore your options from packages that are built from [**htmlwidgets**](https://www.htmlwidgets.org/showcase_leaflet.html). These **htmlwidgets**-based packages offer ways to build lighterweight, dynamic visualizations or tables that don't require an R server to run! A more complete list of packages is available on the linked website, but a short list includes:
 
-* [**plotly**](https://plot.ly/r/): Interactive graphics with D3
-* [**leaflet**](https://rstudio.github.io/leaflet/): Interactive maps with OpenStreetMap
-* [**dygraphs**](http://rstudio.github.io/dygraphs): Interactive time series visualization
-* [**visNetwork**](http://dataknowledge.github.io/visNetwork): Network graph visualization vis.js
-* [**sparkline**](https://github.com/htmlwidgets/sparkline): Small inline charts
-* [**threejs**](https://github.com/bwlewis/rthreejs): Interactive 3D graphics
-    
-You may embed a published Shiny app in your blog if useful, but be aware that there is a limited window size for embedded objects, which tends to makes the user experience of the app worse relative to a dedicated Shiny app page. Additionally, Shiny apps will go idle after a few minutes and have to be reloaded by the user, which may also affect the user experience. 
 
-Any Shiny apps embedded in your blog should be accompanied by the link to the published Shiny app (I did this using a figure caption in the code chunk below, but you don't have to incorporate the link in this way).
+## Emma - Covid Recovery Times
 
-```{r ds-salaries-app, out.width = "100%", out.extra = 'data-external="1" frameborder="no"', fig.cap = "[Data Science Salaries Shiny App](https://bebailey.shinyapps.io/data-science-salaries)"}
-knitr::include_app("https://bebailey.shinyapps.io/data-science-salaries",
-                   height = "500px")
+For this PUG project we chose to continue to work with COVID data on a global scale as opposed to just statewide data in Massachusetts. My goal for this project was to discover what qualities and conditions of countries were similar between those who took longer to “recover” from COVID in 2021. To do this I worked with k-means clustering and a handful of attributes in the OWID COVID dataset. I wanted specifically to use attributes that did not technically “have anything to do with” COVID or a pandemic to see how the country at its pre-pandemic level reacted. I looked for poverty as well as income data in other sources, but it was either incomplete or not in the years that I wanted so I instead stayed within the OWID dataset. I narrowed down my variables to population density, GDP per capita, the cardiovascular death rate, and diabetes prevalence for each country as they were both the most complete datasets and msot interesting to me. My next big step was to determine my `daystil` variable, which would tell me how long it took, in number of days, for countries to recover. I did some exploring on the OWID website with their distribution displays and ended up deciding on finding the number of days countries took, including all of 2020 but only evaluating in 2021, to get to one death per million. I did not evaluate all of 2020 for a few reasons: Things started out bad and got worse, and I didn’t want that “started out” portion to be chosen for when countries were at one death per million; The summer allowed for much more outside time and less school with lowered rates so I wanted to evaluate recovery from a winter where people would have been inside; Countries that were affected later needed to be taken into consideration. So, I evaluated only 2021 and forward for at what point countries hit the 1 death per million mark.
+```{r picking vars, include=FALSE}
+#Picking information for clustered data
+covidCountries <- data %>% 
+  select(location, country, population_density, gdp_per_capita, cardiovasc_death_rate, diabetes_prevalence, daystil) %>%
+  drop_na()
+#Without Russia
+covidCountriesNoR <- covidCountries %>%
+  filter(country != "RUS")
+#Without any day 1 countries
+covidCountriesNoMin <- covidCountries %>%
+  filter(daystil > 297)
+
+#Prepping data for clustering
+covidCountriesFor <- covidCountries %>%
+  select(-country, -location)
+#Without Russia
+covidCountriesForNoR <- covidCountriesNoR %>%
+  select(-country, -location)
+#Without any day 1 countries
+covidCountriesForNoMin <- covidCountriesNoMin %>%
+  select(-country, -location)
+
+```
+I used the elbow plot to pick the number of clusters and ended up with three, in Figure 1. Four also would have been fine but I didn’t think that adding the complexity of four was going to be adding much to anything I was doing, so I just went ahead with three.
+
+
+*Figure 1*
+``` {r determining cluster size (with Russia), echo=FALSE}
+# Iterate through clustering algorithm for 10 different values of k (with Russia)
+elbow_plot <- tibble(k = 1:10) %>%
+  mutate(
+    kmeans_results = purrr::map(k, ~kmeans(covidCountriesFor, .x)), 
+    glanced = purrr::map(kmeans_results, glance)) %>% 
+  # Turn `glanced` list-column into regular tibble columns
+  unnest(cols = c(glanced))
+
+# Construct elbow plot
+ggplot(elbow_plot, aes(x = k, y = tot.withinss)) +
+  geom_point() + 
+  geom_line() +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Number of clusters (k)", 
+       y = "Total within-cluster sum of squares") +
+  ggtitle("Elbow plot to determine appropirate cluster size")
 ```
 
 
-## Tables
+In terms of my grouping, I ended up with three clusters that were certainly different in terms of GDP per capita, cardiovascular death rate, and population density, but I had pretty close numbers for days until recovery with 312, 316, and 359 days in each group (Figure 2). I also noticed that Russia was a huge outlier in terms of days until recovery, so I tried clustering without Russia in the picture. I did the elbow plot again for this too and decided on three clusters as well. The withins are slightly lower for one group in the data without Russia than the data with Russia, but the change in data seemed to make more of a difference in terms of the visualization than in terms of the actual statistical results so I kept Russia in the data (Figure 3). I thought the display was most interesting and easy to see in terms of different clusters when plotting GDP per capita and days until recovery. 
 
-### **DT** package
 
-The [**DT** package](https://rstudio.github.io/DT/) is great for making dynamic tables that can be displayed, searched, and filtered by the user without needing an R server or Shiny app!
+*Figure 2*
 
-Note: you should load any packages you use in the `setup` code chunk as usual. The `library()` functions are shown below just for demonstration.
+```{r performing kmeans clustering, echo=FALSE}
+set.seed(420) #blaze it 
+              #I'M KIDDING
 
-```{r dt-example, message=FALSE, echo=TRUE}
-library(DT)
-mtcars %>% 
-  select(mpg, cyl, hp) %>% 
-  datatable(colnames = c("MPG", "Number of cylinders", "Horsepower"),
-            filter = 'top',
-            options = list(pageLength = 10, autoWidth = TRUE))
+# Perform k-means clustering with k = 3 (This is what I ended up using)
+cc_kmeans3 <- covidCountriesFor %>% 
+  kmeans(centers = 3, nstart = 20)
+
+# Summarize kmeans object components
+cc_kmeans3_summaries <- tidy(cc_kmeans3)
+#cc_kmeans3_summaries
+kmeans3table <- as.data.frame(cc_kmeans3_summaries)
+kmeans3table <- kmeans3table %>%
+  select(cluster, size, daystil, gdp_per_capita, population_density, cardiovasc_death_rate, diabetes_prevalence, withinss) %>%
+  rename("Cluster" = cluster, "Cluster Size" = size, "Days until Recovery" = daystil
+         , "GDP per Capita" = gdp_per_capita, "Population Density" = population_density
+         , "Cardiovascular Death Rate" = cardiovasc_death_rate, "Diabetes Prevalence" = diabetes_prevalence
+         , "Withins" = withinss)
+
+kmeans3table %>%
+  kbl(caption = "Cluster Characteristics") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
 ```
 
-### **kableExtra** package
+*Figure 3*
 
-You can also use [**kableExtra**](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html) for customizing HTML tables.
 
-```{r kable-example, echo=TRUE, message=FALSE}
-library(kableExtra)
-summary(cars) %>%
-  kbl(col.names = c("Speed", "Distance"),
-      row.names = FALSE) %>%
-  kable_styling(bootstrap_options = "striped",
-                full_width = FALSE) %>%
-  row_spec(0, bold = TRUE) %>%
-  column_spec(1:2, width = "1.5in") 
+```{r viz, warning=FALSE, echo=FALSE}
+
+ccvizdf3 <- augment(cc_kmeans3, covidCountries)
+
+#Visualize the cluster assignments and centroids
+finalviz <- ggplot(ccvizdf3, aes(x = daystil, y = gdp_per_capita
+                                 , text = paste(location,", GDP per Capita: $",gdp_per_capita))) + 
+  geom_point(aes(color = .cluster, shape = .cluster)) +
+  geom_text_repel(aes(label = country, color = .cluster), 
+                  size = 3, max.overlaps = 15, show.legend = FALSE) +
+  labs(x = "Days until Recovery",
+       y = "GDP in USD per Capita",
+       color = "Cluster",
+       shape = "Cluster") +
+  theme_classic() +
+  ggtitle("Cluster display of Days until Recovery vs GDP per Capita") 
+
+ggplotly(finalviz, tooltip = "text") #set hover info
 ```
 
+Finally, I removed all countries that “recovered” on day one of 2021, or in 297 days. There were many countries that were already under one death per million, and I wondered if their prevalence was messing with my data. I hesitate to make this my entire project, because there are certainly countries that did this and managed to stay in control all on their own but I think a large number of countries have this statistic because the reporting was more difficult to get a hold of. Results were very similar, in that I didn’t get huge differences between the number of days it took for countries to recover per group and the trends with GDP, population density, and my other variables were consistent.
 
-## Images
 
-Images and gifs can be displayed using code chunks:
+For my one last sort of bonus step, I fit a multiple linear model to try to predict days until recovery, picking variables from the same set of variables I used for clustering and ending up just using GDP per capita and population density (Figure 4). It’s not as nuanced as clustering is, but it was interesting to compare some more “basic” observations about days until recovery in countries – higher GDP per capita and lower population density contribute to higher numbers of days until recovery – with what my clusters seemed to communicate. Looking at the clusters (3 clusters, including Russia), I found that the highest GDP per capita and highest population density as well as lowest GDP per capita and lowest population density was grouped with the lower days until recovery, whereas the middle ground in those two respects had a higher days until recovery. Diabetes prevalence and cardiovascular death rate did not seem to follow any specific pettern of higher or lower numbers grouping with days until recovery (Figure 2).
 
-```{r, fig.cap='"Safe Space" by artist Kenesha Sneed', out.width="80%", fig.align="center"}
-knitr::include_graphics("img/Kenesha-Sneed_safe-space.jpeg")
-```
 
+*Figure 4*
 
-```{r, fig.cap="This is a figure caption", out.width="50%", fig.align="center"}
-knitr::include_graphics("https://media.giphy.com/media/H7ZrrA9V2pd3Tehdds/giphy.gif")
-```
 
-You may also use Markdown syntax for displaying images as shown below, but code chunks offer easier customization of the image size and alignment.
-
-![This is another figure caption](https://media.giphy.com/media/8i5IvxP9ZLgmjXN1BF/giphy.gif)
-
-Either way, the file path can be a local path within your project directory or a URL for an image hosted online. This syntax works for PNG, PDF, JPG, and even GIF formats.
-
-
-## Videos
-
-You can use code chunks or Markdown syntax include links to any valid YouTube or Vimeo URLs (see [here](https://bookdown.org/yihui/rmarkdown/learnr-videos.html) for details) or point to a location within your project directory. 
-
-Code chunk:
-
-```{r, out.width="80%", fig.align="center"}
-knitr::include_url("https://www.youtube.com/watch?v=up8ODGFWgFg")
-```
-
-Markdown syntax:
-
-![](https://www.youtube.com/watch?v=up8ODGFWgFg){width="90%"}
-
-
-You may need to push your updates to GitHub to see if the videos work.
-
-
-
-
-## Equations
-
-You might include equations if part of the purpose of your blog is to explain a statistical method. There are two ways to include equations:
-
-* Inline: $b \sim N(0, \sigma^2_b)$
-* Display-style (displayed on its own line): 
-$$\frac{\sigma^2_b}{\sigma^2_b + \sigma^2_e}$$
-
-For typesetting equations appropriately, check out the [AMS-LaTeX quick reference](https://github.com/manuelemacchia/math-latex/blob/master/amsmath.pdf) or take a look at the *Symbols in math mode* section of this  [cheat sheet](https://users.dickinson.edu/~richesod/latex/latexcheatsheet.pdf)  (or do some extra Googling---there are *many* resources).
-
-
-
-# Formatting
-
-## Tabbed subsections {.tabset}
-
-Each subsection below the "Tabbed subsections" section heading will appear in a tab. See R Markdown Cookbook [Section 7.6: Put content in tabs](https://bookdown.org/yihui/rmarkdown-cookbook/html-tabs.html) for additional customization options. 
-
-### Bulleted list
-
-You can make a bulleted list like this:
-
-* item 1
-* item 2
-* item 3
-
-
-### Numbered list
-
-
-You can make a numbered list like this
-
-1. First thing I want to say
-2. Second thing I want to say
-3. Third thing I want to say
-
-
-
-## Column formatting
-
-<!-- Begin columns environment -->
-:::::: {style="display: flex; font-size: large;"}
-
-<!-- Create a column -->
-::: {}
-### Content Column 1
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse vel ipsum eu sem facilisis porttitor. Integer eu tristique lectus. Vestibulum nisi risus, porta sit amet cursus nec, auctor ac tellus. Integer egestas viverra rhoncus. Fusce id sem non ante vestibulum posuere ac sed lorem. Proin id felis a mi pellentesque viverra in at nulla. Duis augue nulla, aliquet ac ligula a, sagittis varius lorem.
-
-
-
-:::
-
-<!-- Create another column (this one is just adding horizontal space to separate content) -->
-::: {}
-<div class="horizontalgap" style="width:60px"></div>
-:::
-
-<!-- Create another column -->
-::: {}
-
-### Content Column 2
-
-Aliquam non ante et erat luctus hendrerit eu ac justo. Fusce lacinia pulvinar neque non laoreet. Fusce vitae mauris pharetra, scelerisque purus eget, pharetra nisl. Aenean volutpat elementum tortor vitae rhoncus. Phasellus nec tellus euismod neque congue imperdiet tincidunt in mauris. Morbi eu lorem molestie, hendrerit lorem nec, semper massa. Sed vulputate hendrerit ex, eget cursus purus. Pellentesque consequat erat leo, eleifend porttitor lacus porta at. Vivamus faucibus quam ipsum, id condimentum ligula malesuada ultrices. Nullam luctus leo elit, vitae rutrum nibh venenatis eget. Nam at sodales purus. Proin nulla tellus, lacinia eget pretium sed, vehicula aliquet neque. Morbi vel eros elementum, suscipit elit eu, consequat libero. Nulla nec aliquet neque. Nunc bibendum sapien lectus, sed elementum nisi rutrum non. Ut vulputate at lacus eget maximus.
-
-```{r, out.width="80%", fig.align="right"}
-mtcars %>% 
-  ggplot(aes(x = wt, y = mpg)) +
-  geom_point()
-```
-
-:::
-::::::
-<!-- End columns environment with matching length indicator-->
-
-
-
-
-# Customizing your blog design
-
-
-As a *final* detail **only** if you have time, you can explore options for customizing the style of your blog. By default, we are using the `readthedown` theme from the [**rmdformats** package](https://github.com/juba/rmdformats) (see Line 6 of this file if you want to switch out themes).
-
-
-## Theme
-You can use the [**rmdformats** package](https://github.com/juba/rmdformats) to play around with some pre-built themes. There are, I'm sure, many many many more similar packages with built in themes, or you can look into how to include a CSS code chunk to customize aspects of a theme.  
-
-Using the **rmdformats** package, you can change the theme itself (Line 6): 
-
-* `rmdformats::readthedown`
-* `rmdformats::downcute` 
-  * For `downcute` only, you can add a new indented line below Line 6 with the code `downcute_theme: "chaos"` for the `downcute chaos` theme
-* `rmdformats::robobook` 
-* `rmdformats::material`
-
-You can explore additional YAML options by looking at the [**rmdformats** package](https://github.com/juba/rmdformats) page or running, for example, `?rmdformats::readthedown()` to see the help documentation for a particular theme from the package. 
-
-## Synax highlighting
-
-You can also change the code chunk syntax highlighting option (Line 7, `highlight`): 
-
-* `"default"`
-* `"tango"`
-* `"pygments"`
-* `"kate"`
-* `"monochrome"`
-* `"espresso"`
-* `"zenburn"`
-* `"haddock"`
-* `"textmate"` 
-* `NULL` for no syntax highlighting (not recommended)
-
-## Font size, type, and other customization
-
-Further customization requires adding a CSS style file or code chunk or incorporating other development options. Customization beyond the **rmdformats** package should be your lowest and final priority for the project. Ensure your content is fully prepared first.
-
-
-# References
-
-All data sources, any key R packages, and any other sources used in developing your blog should be cited in full in a list of references at the end of your blog. Your blog post should also link to these sources as they are discussed. You may choose any reference style as long as sources are fully cited (try to be consistent!).
-
-Typically, references in R Markdown (and LaTeX) files are [incorporated with a BibTeX database](https://bookdown.org/yihui/rmarkdown-cookbook/bibliography.html) (a .bib file). You can try this approach or manually include either a numbered or alphabetized list. 
-
-Columbia University has compiled some guidance on [how to cite data](https://guides.library.columbia.edu/datacitation). Some data sources will give you the citation information to copy and paste. Use the provided citations or citation styles in those cases.
-
-You can list R package citations with the code `citation("packageName")` in the console and then copy (and reformat as needed) the relevant text, e.g.,
 ```{r}
-citation("DT")
+fit <- lm(daystil ~ gdp_per_capita  + population_density, data=covidCountries)
+summary(fit)
+
 ```
 
-The following citations are based on the American Statistical Association citation style (not all of these references are used in this document).:
 
+I had high hopes for what my data could and would show, but I think there are some serious limitations to this project. My biggest challenge was figuring out how I was going to make my days until recovery variable. The number that I picked, 1 death per million, seems like a good metric to me but I think a better number would have been one that took the population density of the country into account. Even though this number is a per capita number, which takes into account the actual size of the population, I wonder if population density might guide me to finding different and more specific metrics. The 2020/2021 choice for when to start counting days was also a little shaky but I think the reasoning behind that is much more solid than the 1 death per million. Another thing I wish I could have implemented better is the poverty statistics I was looking to be able to cover for all countries (Instead of just SIX when I narrowed it down :( ) and something with healthcare. I was also unable to find that over the countries I wanted to predict, but I think it would have been really interesting to class levels of healthcare coverage and then use that to group countries with days until recovery. 
 
-<!-- Textbook -->
-Baumer, B. S., Kaplan, D. T., and Horton, N. J. (2021), *Modern Data Science with R* (2nd ed.), Boca Raton, FL: CRC Press.
-
-<!-- Journal article -->
-Broman, K. W. and Woo, K. H. (2018), "Data Organization in Spreadsheets," *The American Statistician*, 72:1, 2-10, doi: [10.1080/00031305.2017.1375989](https://doi.org/10.1080/00031305.2017.1375989)
-
-<!-- Website -->
-Columbia University Libraries (n.d.), "Data Citation," available at <https://guides.library.columbia.edu/datacitation>.
-
-<!-- Journal article -->
-McNamara, A. and Horton N. J. (2018) "Wrangling Categorical Data in R," *The American Statistician*, 72:1, 97-104, doi: [10.1080/00031305.2017.1356375](https://doi.org/10.1080/00031305.2017.1356375).
-
-<!-- Dataset -->
-Shah, Syed A. A. (October 2022), "Starbucks Drinks" (Version 1), *Kaggle*, available at <https://www.kaggle.com/datasets/syedasimalishah/starbucks-drinks>.
-
-<!-- R package -->
-Xie Y, Cheng J, Tan X (2022). "DT: A Wrapper of the JavaScript Library 'DataTables'," R package version 0.24, available at <https://CRAN.R-project.org/package=DT>.
-  
-
-
- 
-
-
+Ultimately I think this is a really interesting concept, and if I had better and more complete data on a wider range of country attributes like housing type, rural vs. urban populations, healthcare coverage, etc. I would definitely have a wider range of things to choose from and probably more interesting results. Were that to exist, this data could help the WHO advise countries on what to expect from a pandemic based on their current situation and how possibly to put themselves in a better position to resist one. 
