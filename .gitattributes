@@ -1,5 +1,0 @@
-covid19_publications.csv filter=lfs diff=lfs merge=lfs -text
-*.csv filter=lfs diff=lfs merge=lfs -text
-.csv filter=lfs diff=lfs merge=lfs -text
-.Rds filter=lfs diff=lfs merge=lfs -text
-*.Rds filter=lfs diff=lfs merge=lfs -text
