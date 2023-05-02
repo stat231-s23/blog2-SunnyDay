@@ -68,7 +68,8 @@ ggplot(elbow_plot, aes(x = k, y = tot.withinss)) +
 
 ```{r kmeans}
 # Perform k-means clustering with k = 4
-set.seed(420) #blaze it #I"M KIDDING
+set.seed(420) #blaze it 
+              #I'M KIDDING
 
 cc_kmeans4 <- covidCountriesFor %>% 
   kmeans(centers = 4, nstart = 20)
