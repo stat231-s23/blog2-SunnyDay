@@ -26,46 +26,79 @@ common_topics <- readRDS(file = "data/common_topics.RDs")
 ```
 
 
-During the pandemic, scientists around the globe were putting all of their resources into better understanding Covid-19 and finding a cure or vaccine. This lead to an unprecedented level of scientific advancement and research, which can be reflected in the scientific publications released to document these feats. 
+During the pandemic, scientists around the globe were putting all of their resources into better understanding Covid-19 and finding a vaccine. This led to an unprecedented level of scientific advancement and research, which is reflected in the scientific publications released to document these discoveries. For this analysis, I used data from Dimensions, the world’s largest linked research database. The dataset I used encompasses all publications, datasets, and clinical trials from Dimensions pertaining to Covid-19 from March 2020 to September 2021, and can be accessed here. With such a comprehensive data source, I hoped to explore trends and similarities in Covid-related publications. Specifically, I wanted to analyze which countries contributed the most to Covid research efforts based on their publication amounts, and what the most common topics of interest were across all the Covid publications based on their titles.
 
 ## Publications by Country
 
-Although everyone was working around the clock to find a vaccine, there were some countries that rose above with their amount of contributions.
+In order to examine publication prevalence by country, I used the country of research origin variable from the dataset to determine what country to assign each publication title to. Many of these publications are collaborations and had multiple authors, some from the same country and some from different countries. In those cases, I double-counted a specific publication title for multiple countries, but I did not double-count it for the same country. I figured that for the purpose of this analysis I wasn’t interested in how many authors from each country were published, but rather how many publications were at least partially published with data from that country; therefore I didn’t want the data skewed by say a publication with 5 authors all from the US counting as 5 different publications.
 
 ```{r echo=FALSE}
-#ggplot barchart of publications by country
-country_pub_gg <- country_pubs %>%
+#ggplot barchart of publications by country 2020
+country_pub_gg20 <- country_pubs %>%
+  filter(pub_year == 2020) %>%
   slice(1:10) %>%
   ggplot(aes(x = fct_reorder(country, count), y = count, color = country, fill = country)) +
   geom_col() +
-  facet_grid(. ~ pub_year) +
   # Rotate graph
   coord_flip() +
   guides(color = "none", 
          fill = "none") +
   labs(
-    title = "Top Publication Producing Countries in 2020 and 2021",
-    x = "Publication Count",
-    y = "Country"
+    title = "Top 10 Publication Producing Countries in 2020",
+    y = "Publication Count",
+    x = "Country"
   )
  
 #interactive plotly chart of publications by country
-cpubs_plotly <- ggplotly(country_pub_gg, tooltip = "count") 
-cpubs_plotly
+cpubs_plotly20 <- ggplotly(country_pub_gg20, tooltip = "count") 
+cpubs_plotly20
 ```
 
-As you can see, throughout the height of the pandemic the United States was the top contributor of Covid related publications. This data was taken from Dimensions, the world's largest linked research database. 
+```{r}
+#ggplot barchart of publications by country 2021
+country_pub_gg21 <- country_pubs %>%
+  filter(pub_year == 2021) %>%
+  slice(1:10) %>%
+  ggplot(aes(x = fct_reorder(country, count), y = count, color = country, fill = country)) +
+  geom_col() +
+  # Rotate graph
+  coord_flip() +
+  guides(color = "none", 
+         fill = "none") +
+  labs(
+    title = "Top 10 Publication Producing Countries in 2021",
+    y = "Publication Count",
+    x = "Country"
+  )
+ 
+#interactive plotly chart of publications by country
+cpubs21_plotly <- ggplotly(country_pub_gg21, tooltip = "count") 
+cpubs21_plotly
+```
+
+Although everyone was working around the clock to find a vaccine, there were some countries that rose above with their amount of contributions. As you can see, in both 2020 and 2021 the United States was the top contributor of Covid related publications. The US had more than double the number of publications than the second and third most published countries, the United Kingdom and China. Additionally, although there is some movement between the two years, the same 10 countries had the most publications throughout the height of the pandemic.  
 
 ## Most Common Publication Topics
 
-While the overarching goal was to find a vaccine for Covid, that wasn't necessarily the main focus in all of these publications.
+Although the dataset I used on publications was pretty comprehensive, it didn’t include the actual text of the papers. Since many of these papers also weren’t open access, in order to analyze common topics I had to focus on the paper titles. While you would assume that the title of a paper accurately reflects the main topics of the writing, that is not always the case, so this topical analysis is far from perfect in its scope. Also, I removed the typical stop words for this analysis (from the stop_words dataset), but due to the medical and global context, there were some additional stop words I manually removed. These included stop words in other languages such as “de” and “la”, and words redundant to this analysis such as “Covid-19” and “2020”.
 
 ```{r echo=FALSE}
 set.seed(12)
+my_palette <- brewer.pal(9, "YlOrRd")[3:9]
 #create common topics word cloud
 common_topics %>%
-  with(wordcloud(words = word, freq = count, max.words = 50))
+  with(wordcloud(words = word, freq = count, max.words = 50,
+                 # Specify the range of the size of the words
+                 scale = c(3.2, 0.7),
+                 # Specify proportion of words with 90 degree rotation
+                 rot.per = 0.15,
+                 # Color words from least to most frequent
+                 colors = my_palette,
+                 # Change font family
+                 family = "serif"))
 
 ```
 
-As you can see, many of the most common topics (based on publication title) aren't directly about a vaccine. Many focus on Covid patients and their health, or the severity of infection, or impact of care recieved. These all come together to help us better understand the workings of Covid, which in turn lead to us being able to synthesis a vaccine. 
+As you can see, many of the most common topics (based on the publication title) aren't directly about a vaccine. Many focus on Covid patients and their health, the severity of infection, or the impact of care received. Also, there is a common theme of learning and relation in these studies, which emphasizes how much of the research effort was exploratory due to how little we knew about the disease and its treatment. It is also important to note that all of these publications weren’t clinical trials or even strictly medical; rather, they include any and all published papers (on Dimensions) that related to Covid in some way. So not all of these are strictly focused on the patient health aspect (although clearly many of them were), and it seems quite a few are general reviews of the existing literature suggesting possible future areas of study.
+
+Although these visualizations are valuable tools in understanding the publications released on Covid during the height of the pandemic, there are several limitations to the conclusions we can draw from this data due to the manipulations necessary to perform these analyses. For example, all of the publications counted in both of these figures had to have titles written using the Latin alphabet, which means that English-speaking (or publishing) countries would be much more favored in the analysis. Also, some publications were excluded from these analyses that didn’t have titles or countries assigned to them in the dataset, which could have been a flaw in the way the dataset was collected which may negatively affect certain countries.

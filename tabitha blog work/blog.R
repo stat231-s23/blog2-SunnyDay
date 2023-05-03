@@ -10,10 +10,10 @@ library(textdata)
 library(stringr)
 library(plotly)
 
-#import wrangled data
+#import basic wrangled data
 pubs_data <- readRDS(file = "data/covid_pubs.RDs")
 
-#create publication prevalence by country barchart
+#wrangle data for publication prevalence by country barcharts
 country_pubs <- pubs_data %>%
   rename(country = country_of_research_organization) %>%
   unnest_tokens(output = country, input = country, 
@@ -31,7 +31,7 @@ country_pubs <- pubs_data %>%
 saveRDS(country_pubs, file = "data/pubs_by_country.RDs")
 
 
-#create top words barchart
+#wrangle data for top words wordcloud
 data(stop_words)
 
 #seperate words from titles
