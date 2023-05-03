@@ -19,7 +19,6 @@ library(plotly)
 library(wordcloud)
 
 #import wrangled data
-#pubs_data <- readRDS(file = "data/covid_pubs.RDs")
 country_pubs <- readRDS(file = "data/pubs_by_country.RDs")
 common_topics <- readRDS(file = "data/common_topics.RDs")
 
