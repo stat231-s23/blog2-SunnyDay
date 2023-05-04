@@ -7,7 +7,7 @@ output:
     highlight: "kate"
 ---
 
-```{r setup, include = FALSE}
+```{r setup, include = FALSE, warnings=FALSE, message=FALSE}
 # Set code chunk defaults 
 # Consider adding `message = FALSE` option
 knitr::opts_chunk$set(echo = FALSE) 
@@ -53,7 +53,7 @@ library(rworldmap)
 library(rworldxtra)
 library(crosstalk) #for crosstalk. 
 library(htmlwidgets)
-library(bslib) # framework that allows one to styel theire Shiny applications and R Markdown documents with pre-build Bootstrap (open-source library created by Twitter) themes.
+library(bslib) # framework that allows one to style their Shiny applications and R Markdown documents with pre-build Bootstrap (open-source library created by Twitter) themes.
 library(reactable)
 library(leaflet)
 
@@ -148,18 +148,227 @@ As you can see, many of the most common topics (based on the publication title) 
 
 Although these visualizations are valuable tools in understanding the publications released on Covid during the height of the pandemic, there are several limitations to the conclusions we can draw from this data due to the manipulations necessary to perform these analyses. For example, all of the publications counted in both of these figures had to have titles written using the Latin alphabet, which means that English-speaking (or publishing) countries would be much more favored in the analysis. Also, some publications were excluded from these analyses that didn’t have titles or countries assigned to them in the dataset, which could have been a flaw in the way the dataset was collected which may negatively affect certain countries.
 
-## Lynca
-```{r}
+```{r, warning = FALSE, echo = FALSE}
+covid_worldwide_7 <- readRDS("data/covid_worldwide_data.RDS")
+#importing the dataset. 
+```
+
+
+## Analysis of socio-economic factors that have influenced covid-19 cases from a global perspective.
+
+In my analysis, I delved into the distribution of covid-19 metrics, such as the number of deaths, cases and vaccinations, and took a country-by-country approach to comparing these values. Through this process, I created a graph that visualizes the total number of covid cases reported by all countries from January 2020 to January 2023. Additionally, the accompanying table provides a more detailed overview of pandemic observations, including the number of cases, deaths and vaccinations adjusted to the population size, allowing for a closer examination of which countries have fared better or worse. 
+
+The goal of creating this graph was to first recognize the disparity in reported per capita COVID-19 cases across different countries. This lays the foundation for further analysis of the potential socio-economic factors that may contribute to these trends.
+
+
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
+options(warn=-1)
+covid_worldwide_7 <- covid_worldwide_7 %>%
+  filter(!is.na(country) & country != "")
+
+#total counts
+  covid_worldwide_dataT <- covid_worldwide_7 %>%
+    select("country" | "continent" | "date"| "new_deaths_smoothed" |
+             "new_cases_smoothed" | "new_tests_smoothed"| "new_vaccinations_smoothed" | "population" |"life_expectancy"|"aged_65_older" | iso_code | geom | longitude | latitude) %>%
+    group_by(country, continent, population, life_expectancy, aged_65_older, latitude, longitude, geom, iso_code)%>%
+    summarize(total_cases = sum(new_cases_smoothed), 
+              total_deaths = sum(new_deaths_smoothed), 
+              total_tests = sum(new_tests_smoothed), 
+              total_vaccinations = sum(new_vaccinations_smoothed))%>%
+    ungroup()
+  
+    
+  #per capita counts
+    covid_worldwide_dataT_capita <- covid_worldwide_dataT %>%
+    select("country" | "continent" | "total_cases" |
+             "total_deaths" | "total_tests"| "total_vaccinations" | "population" |"life_expectancy"|"aged_65_older" | iso_code | geom | longitude | latitude) %>%
+    group_by(country, continent, population, life_expectancy, aged_65_older, latitude, longitude, geom, iso_code)%>%
+    summarize(total_cases_capita = round((total_cases/population) * 100, 3),
+              total_deaths_capita = round((total_deaths/population) *100, 3),
+              total_tests_capita = round((total_tests/population) *100, 3),
+              total_vaccinations_capita = round((total_vaccinations/population)*100,3))%>%
+      ungroup()
+    
+    
+#extracting only the desired pieces of information from the data set.
+ covid_worldwide_leaflet_map <- covid_worldwide_dataT_capita %>%
+   select("country", "continent", longitude, latitude, geom, total_cases_capita, total_deaths_capita)
+ 
+
+ #transforming it into a leaflet object: 
+ covid_worldwide_7_leaflet <- covid_worldwide_leaflet_map %>%
+   st_as_sf()
+ 
+
+ #caused me so much trouble but it is use to transform spatial data from one coordinate reference system (CRS) to another.From CRS to WGS84
+ covid_worldwide_8_leaflet <- st_transform(covid_worldwide_7_leaflet, "+proj=longlat +datum=WGS84")
+ 
+
+# Define a color palette over the values 0 to 1
+my_palette <- colorNumeric(palette = "YlGnBu"
+, domain = covid_worldwide_8_leaflet$total_cases_capita)
+
+
+# Create interactive map, zoomed in on Amherst
+map <- leaflet(data = covid_worldwide_8_leaflet) %>%
+  addTiles() %>%
+   addPolygons(
+      fillColor = ~my_palette(total_cases_capita),
+       stroke = FALSE,
+        popup = ~ glue::glue("Country: {str_to_title(country)}
+                        <br> {paste0(round(total_cases_capita,2), '%')}"), 
+      weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5,
+   # fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
+    #highlightOptions = highlightOptions(color = "white", weight = 2,
+    #  bringToFront = TRUE), 
+   highlightOptions = highlightOptions( weight = 5, color = "#666", bringToFront = TRUE)) %>%
+   addLegend(pal = my_palette,
+            values = covid_worldwide_8_leaflet$total_cases_capita,
+           position = "bottomright",
+           title = "Percentage of Per capita cases reported
+            <br> (% 2021-2022)" )
 
 ```
 
-```{r}
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
+options(warn=-1)
+# ungroup your dataframe
+covid_worldwide_dataT_capita_ungrouped <- covid_worldwide_dataT_capita %>% 
+  ungroup()
+covid_worldwide_dataT_capita_table <- covid_worldwide_dataT_capita_ungrouped %>% 
+  select("country" , total_cases_capita , total_deaths_capita , total_vaccinations_capita , total_tests_capita) 
+
+#covid_worldwide_dataT_capita_table%>% 
+  dataframe <- DT::datatable(covid_worldwide_dataT_capita_table, 
+                colnames = c("Country", "Percentage of Covid-19 cases Per Capita", 
+                         "Percentage of  Deaths Per Capita", 
+                         "Percentage of  Vaccinations Per Capita", 
+                         "Percentage of  Tests Per Capita"),
+            filter = 'top',
+            options = list(autoWidth = TRUE))
 
 ```
 
-```{r}
+
+
+#### Country-level covid-19 view {.tabset}
+
+##### Spatial View
+
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
+map
+```
+##### Table View
+
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
+dataframe
+```
+
+#### Some features about both representations: 
+
+At a glance, the majority of countries are reporting that the total number of people who have caught covid is
+between 10 and 20% of their national population. However the table is worrying as some countries claim to have never had a covid case like North Korea or never had a covid death like my home country, Burundi, but I was there last summer and I can assure you that far too many people had "the flu". Some countries claim to have never done a test or vaccinations. 
+
+The other notable feature of the map is that some countries in Europe such as France, Portugal, Iceland, South Korea, Bulgaria, and others, appear to have had the highest cumulative per capita COVID-19 cases from 2021 to 2022.
+
+#### Covid distribution in relation to other factors. 
+
+As my first objective was to find a potential connecting thread between the socio-economic factors specific to each country and the fact that they were reflected in the observations associated with the pandemic, I undertook to analyze the progression of covid- 19 for each country and I have included filtering choices which allowed to visualize the countries whose socio-economic factor is in a certain range, say whose GDP is in a certain range, average age and so on. 
+
+
+#### Socio-economic factors and covid related observations. {.tabset}
+
+##### Per Capita Percentage of Case Counts vs GDP Per Capita and Population Density
+
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
+covid_worldwide_8 <- covid_worldwide_7 %>%
+  filter(!is.na(country) & country != "")
+
+
+covid_worldwide_9 <- covid_worldwide_8 %>%
+  group_by(country, continent, date, extreme_poverty, gdp_per_capita, aged_65_older, life_expectancy,           
+           diabetes_prevalence, population_density, population)%>%
+    summarize(new_cases_smoothed_capita = round((new_cases_smoothed/population) *100, 3),
+              new_deaths_smoothed_capita = round((new_deaths_smoothed/population) *100,3), 
+              new_tests_smoothed_capita = round((new_tests_smoothed/population)*100,3),
+              new_vaccinations_smoothed_capita = round((new_vaccinations_smoothed/population)*100,3))%>%
+  ungroup()
+
+covid_lines <- highlight_key(covid_worldwide_9)
+
+gg_covid <- ggplot (data = covid_lines, aes(x=date, y = new_cases_smoothed_capita, group = country)) +
+  geom_line(aes(color = continent,            
+                text = paste("Country: ", country, 
+                             "<br>Date: ", date, 
+                              "<br> % New covid cases per capita", new_cases_smoothed_capita, 
+                              "<br> Population Density", population_density, 
+                              " <br> GDP per capita", gdp_per_capita
+                        )), show.legend = FALSE)+
+  xlab("Date") + ylab("Percentage of New Cases Per Capita")+ 
+  ggtitle("Per Capita Covid Cases Trend") +
+  theme_bw()
+
+ bscols(widths = c(3,9),
+        list(
+              filter_select("id", label = "Select a country", covid_lines, ~country),
+              filter_slider(id = "slider_pd", label = "Population Density",
+                    covid_lines, column = ~population_density),
+              filter_slider(id = "slider_gdp_per_capita", label = " GDP Per Capita", 
+                            covid_lines, column = ~gdp_per_capita)
+             ), 
+          ggplotly(gg_covid, dynamicTicks = TRUE, tooltip = c("text"),  
+           tooltipoptions = list(placement = "bottom"))
+ 
+)
 
 ```
+
+
+##### Per Capita Percentage of  Covid-induced Deaths  vs GDP Life Expectancy and Proportion of 65+ people.
+
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
+gg_covid_2 <- ggplot (data = covid_lines, aes(x=date, y = new_deaths_smoothed_capita, group = country)) +
+  geom_line(aes(color = continent,            
+                text = paste("Country: ", country, 
+                             "<br>Date: ", date, 
+                              "<br> New covid cases per capita", new_deaths_smoothed_capita, 
+                              " <br> Life expectancy", life_expectancy, 
+                             " <br> Aged 65 older", aged_65_older
+                              
+                              
+                        )), show.legend = FALSE)+
+  xlab("Date") + ylab("Percentage of New Deaths Per Capita")+ 
+  ggtitle("Per Capita Covid Deaths Trend") +
+  theme_bw()
+
+ bscols(widths = c(3,9),
+        list(
+              filter_slider(id = "slider_le", label = "Life Expectancy", 
+                            covid_lines, column = ~life_expectancy),
+              filter_slider(id = "slider_aged70", label = "Aged 65 older", 
+                            covid_lines, column = ~aged_65_older)
+             ), 
+          ggplotly(gg_covid_2, dynamicTicks = TRUE, tooltip = c("text"),  
+           tooltipoptions = list(placement = "bottom"))
+ 
+)
+
+```
+
+#### Note: 
+The pay to price of an interactivity that is not embedded within shiny is that the interactivity is very slow, it doesn't allow for a smooth use of the graph. .
+
+#### Possible Findings: 
+
+#### Tools and Inherent Limitations associated with the tools.
+Crosstalk, according to Chapter 16 of https://plotly-r.com/client-side-linking.html  is a framework for creating widgests and dashboards that allow users to filter, sort and group data, and then visualize the results in real-time.Consequently, it allows one to embed an interactive histogram into an html page generated from an R Markdown document, which is what I needed. 
+
+Due to its computational demands, crosstalk isn't be suitable for larger datasets with a high number of daily observations. Thus, my analysis of the trend of different COVID observations was limited.
+
+#### Inherent Limitation to Making Conclusive Findings: 
+During the data wrangling process, it became apparent that many countries had no COVID-related observations for several months at a time. This lack of reported differs from a zero observation, reason why I haven't made any conclusion yet, and I believe that it should be taken into account when analyzing the data.
+
 
 ## Emma - Covid Recovery Times
 
