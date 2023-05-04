@@ -32,6 +32,30 @@ library(datasets)
 library(textdata)
 library(stringr)
 library(wordcloud)
+library(tidyr)
+library(ical)
+library(DT)
+library(tidytuesdayR)
+library(shinythemes)
+library(stringi)
+library(ggthemes)
+library(gridExtra) 
+library(knitr)
+library(ggplot2)
+library(RMariaDB)
+# help with extracting the right data frames from xlsx
+library(readr)
+library(sf)
+library(rvest) #for web scrapijng
+library(robotstxt) #checking if paths are allowed
+library(rgeos)
+library(rworldmap)
+library(rworldxtra)
+library(crosstalk) #for crosstalk. 
+library(htmlwidgets)
+library(bslib) # framework that allows one to styel theire Shiny applications and R Markdown documents with pre-build Bootstrap (open-source library created by Twitter) themes.
+library(reactable)
+library(leaflet)
 
 #my laptop is funky and particular and only wants to read files in this way >:( But I'm pretty sure that if you set your session to the appropriate folder (blog2-SunnyDay) and then read from /emma/data/biggie.csv
 #data <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/biggie.csv")
@@ -144,8 +168,17 @@ As you can see, many of the most common topics (based on the publication title) 
 Although these visualizations are valuable tools in understanding the publications released on Covid during the height of the pandemic, there are several limitations to the conclusions we can draw from this data due to the manipulations necessary to perform these analyses. For example, all of the publications counted in both of these figures had to have titles written using the Latin alphabet, which means that English-speaking (or publishing) countries would be much more favored in the analysis. Also, some publications were excluded from these analyses that didn’t have titles or countries assigned to them in the dataset, which could have been a flaw in the way the dataset was collected which may negatively affect certain countries.
 
 ## Lynca
+```{r}
 
+```
 
+```{r}
+
+```
+
+```{r}
+
+```
 
 ## Emma - Covid Recovery Times
 

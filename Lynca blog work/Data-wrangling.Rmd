@@ -1,9 +1,13 @@
 ---
-title: ""
-subtitle: "SAT 231: Project 2 _Shiny_App"
+title: "Worldwide analysis of covid-19 related factors and the socio-economic determinants
+  of countries"
 author: "Lynca Jones Kaminka"
-date: "\\today"
-output: pdf_document
+date: "\today"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+subtitle: 'SAT 231: Blog Project'
 ---
 
 ```{r setup, include = FALSE}
@@ -23,7 +27,6 @@ options(scipen = 1, knitr.kable.NA = '')
 
 # load packages
 library(dplyr)
-#library(tidyquant)
 library(tidyverse)
 library(tidyr)
 library(ical)
@@ -36,7 +39,6 @@ library(tidytuesdayR)
 library(plotly)#hovering
 library(shinythemes)
 library(stringi)
-library(ggthemes)
 library(ggthemes)
 library(gridExtra) ##beautifying the graph ~ rotating the labels.
 library(knitr)
@@ -54,14 +56,21 @@ library(robotstxt) #checking if paths are allowed
 library(purrr)
 
 #centroids. 
-library(leaflet)
+
 library(rgeos)
 library(rworldmap)
 library(rworldxtra)
+
+library(crosstalk) #for crosstalk. 
+library(htmlwidgets)
+library(bslib) # framework that allows one to styel theire Shiny applications and R Markdown documents with pre-build Bootstrap (open-source library created by Twitter) themes.
+
+library(reactable)
+library(leaflet)
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 
 #first data frame
 covid_worldwide <- read_csv("data/owid-covid-data.csv")
@@ -103,7 +112,7 @@ mutate(location = as.character(location)
 covid_worldwide_2 <- covid_worldwide %>%
   right_join(world_map, by=c("location" = "ID"))
 
-    
+
     covid_worldwide_3 <- covid_worldwide_2 %>%
     separate("date", into = c("ReportYear", "ReportMonth", "ReportDay"), sep = "-", convert=FALSE) %>%
     mutate(ReportYear = as.numeric(ReportYear))%>%  
@@ -112,7 +121,8 @@ covid_worldwide_2 <- covid_worldwide %>%
     
     covid_worldwide_4 <- covid_worldwide_3 %>%
     filter(ReportYear%in%c(2021,2022))
-
+    
+    
     
     covid_worldwide_5 <- covid_worldwide_4 %>%
     mutate(date = make_date(year = covid_worldwide_4$ReportYear,
@@ -122,10 +132,17 @@ covid_worldwide_2 <- covid_worldwide %>%
     # helped me with figuring out which observations to keep and which ones to get rid of 
     #colnames(covid_worldwide_4)
     
-
-  
+#type_data1: identifying factors
+#data2: covid_related factors
+#data3:    socio-economic factors
+  #names(covid_worldwide_5)
+   
     covid_worldwide_6 <- covid_worldwide_5 %>%
-    select("iso_code" | "location"| "continent" | "total_cases_per_million" | "people_vaccinated" | "date" | "geom" | "population_density"
+    select(iso_code | "location"| "continent" | "date" | geom |
+             "total_cases_per_million" | "total_cases" |
+             "people_vaccinated" | "new_deaths_per_million"  |"new_cases_smoothed" | "new_cases_per_million"  | "new_deaths_per_million" | "new_deaths_smoothed" | "new_tests_smoothed"| "new_vaccinations_smoothed" |
+               "population_density"  | "life_expectancy" | "gdp_per_capita" | "aged_65_older"
+           | "population" 
            | "extreme_poverty" | "diabetes_prevalence")  
 
 #####################################
@@ -171,36 +188,184 @@ mutate(country = as.character(name)
  covid_worldwide_7 <- countries_worldwide_lat_long_updated %>%
  right_join(covid_worldwide_6, by=c("name" = "location"))
  
-covid_worldwide_7 [is.na(covid_worldwide_7)] <- 0
 
+#View(covid_worldwide_7)
 #identifying the columns with numeric types, and replacing the observation from na to zero in that case. 
+ names(covid_worldwide_7)
+ covid_worldwide_missing_data <- covid_worldwide_7 %>%
+   group_by(country, continent, gdp_per_capita)%>%
+  mutate(missing_new_cases_smoothed = sum(is.na(new_cases_smoothed)), 
+         missing_new_deaths_smoothed = sum(is.na(new_deaths_smoothed)))
+ 
+
+
+  
 covid_worldwide_7 <- covid_worldwide_7 %>%
   mutate_if(is.numeric, ~ifelse(is.na(.), 0, .))
 
 
+#saveRDS(covid_worldwide_7 , file = "data/covid_worldwide_7.Rds")
+```
+
+#Data wrangling for the data table
+   ## to do: add another socio-economic factor: 
+```{r}
+covid_worldwide_7 <- covid_worldwide_7 %>%
+  filter(!is.na(country) & country != "")
+
+#total counts
+  covid_worldwide_dataT <- covid_worldwide_7 %>%
+    select("country" | "continent" | "date"| "new_deaths_smoothed" |
+             "new_cases_smoothed" | "new_tests_smoothed"| "new_vaccinations_smoothed" | "population" |"life_expectancy"|"aged_65_older" | iso_code | geom | longitude | latitude) %>%
+    group_by(country, continent, population, life_expectancy, aged_65_older, latitude, longitude, geom, iso_code)%>%
+    summarize(total_cases = sum(new_cases_smoothed), 
+              total_deaths = sum(new_deaths_smoothed), 
+              total_tests = sum(new_tests_smoothed), 
+              total_vaccinations = sum(new_vaccinations_smoothed))
+  
+    
+  #per capita counts
+    covid_worldwide_dataT_capita <- covid_worldwide_dataT %>%
+    select("country" | "continent" | "total_cases" |
+             "total_deaths" | "total_tests"| "total_vaccinations" | "population" |"life_expectancy"|"aged_65_older" | iso_code | geom | longitude | latitude) %>%
+    group_by(country, continent, population, life_expectancy, aged_65_older, latitude, longitude, geom, iso_code)%>%
+    summarize(total_cases_capita = (total_cases/population) * 100, 
+              total_deaths_capita = (total_deaths/population) *100, 
+              total_tests_capita = (total_tests/population) *100, 
+              total_vaccinations_capita = (total_vaccinations/population)*100)
+  
+```
+
+
+#Data Wrangling for the map: 
+```{r, echo = FALSE}
+
+#extracting only the desired pieces of information from the data set.
+ covid_worldwide_leaflet_map <- covid_worldwide_dataT_capita %>%
+   select("country", "continent", longitude, latitude, geom, total_cases_capita, total_deaths_capita)
+ 
+
  #transforming it into a leaflet object: 
- covid_worldwide_7_leaflet <- covid_worldwide_7 %>%
+ covid_worldwide_7_leaflet <- covid_worldwide_leaflet_map %>%
    st_as_sf()
  
- my_palette <- colorNumeric ( palette = "YIGnBu", 
-                              domain = covid_worldwide_7_leaflet$people_vaccinated)
  
- 
-########### to do ; set to zero all the values have a na tag. 
- #covid_worldwide_7[is.na(covid_worldwide_7)] <- 0
-
- 
-#save the datasets to Rds files
-saveRDS(covid_worldwide_7_leaflet, file = "data/covid_worldwide_7_leaflet.Rds")
- 
- 
- #####################################
-####################################    
-#missing data _ remediate to this: countries that aren't present or whose names are mismatched.
-#missing_world_long_lat_values <- countries_worldwide_lat_long_updated %>%
-#anti_join(covid_worldwide_6, by=c("name" = "location"))
+ #Haiti_coords <- 
 
 
-#saving the final file: 
-#saveRDS(, file = ".rds")
+ #caused me so much trouble but it is use to transform spatial data from one coordinate reference system (CRS) to another.From CRS to WGS84
+ covid_worldwide_8_leaflet <- st_transform(covid_worldwide_7_leaflet, "+proj=longlat +datum=WGS84")
+ 
+
+# Define a color palette over the values 0 to 1
+my_palette <- colorNumeric(palette = "YlGnBu"
+, domain = covid_worldwide_8_leaflet$total_cases_capita)
+
+
+# Create interactive map, zoomed in on Amherst
+ map <- leaflet(data = covid_worldwide_8_leaflet) %>%
+   #addProviderTiles("CartoDB.Voyager") %>%
+  addProviderTiles("Stamen.Watercolor") %>%
+  addProviderTiles("Stamen.TonerHybrid") %>%
+   addPolygons(
+      fillColor = ~my_palette(total_cases_capita),
+       stroke = FALSE,
+        popup = ~ glue::glue("Country: {str_to_title(country)}
+                        <br> {paste0(round(total_cases_capita,2), '%')}"), 
+      weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5,
+   # fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
+    #highlightOptions = highlightOptions(color = "white", weight = 2,
+    #  bringToFront = TRUE), 
+   highlightOptions = highlightOptions( weight = 5, color = "#666", bringToFront = TRUE)) %>%
+   addLegend(pal = my_palette,
+            values = covid_worldwide_8_leaflet$total_cases_capita,
+           position = "bottomright",
+           title = "Per capita total covid counts <br> (%, 2021-2022)")
+map%>%
+  fitBounds(-180, -90, 180, 90)
+
 ```
+ 
+```{r}
+library(DT)
+covid_worldwide_dataT_capita %>% 
+  select(country, total_cases_capita, total_deaths_capita, total_vaccinations_capita, total_tests_capita) %>% 
+  datatable(colnames = c("Country", "Percentage of Covid-19 cases Per Capita", 
+                         "Percentage of  Deaths Per Capita", 
+                         "Percentage of  Vaccinations Per Capita", 
+                         "Percentage of  Tests Per Capita"),
+            filter = 'top',
+            options = list( autoWidth = TRUE))
+#data-table
+```
+
+
+```{r}
+covid_worldwide_8 <- covid_worldwide_7 %>%
+  filter(!is.na(country) & country != "")
+
+names(covid_worldwide_8)
+
+covid_worldwide_9 <- covid_worldwide_8 %>%
+  group_by(country, continent, date, extreme_poverty, gdp_per_capita, aged_65_older, life_expectancy,              diabetes_prevalence, population_density, population)%>%
+    summarize(new_cases_smoothed_capita = new_cases_smoothed/population, 
+              new_deaths_smoothed_capita = new_deaths_smoothed/population, 
+              new_tests_smoothed_capita = new_tests_smoothed/population, 
+              new_vaccinations_smoothed_capita = new_vaccinations_smoothed/population)
+
+covid_lines <- highlight_key(covid_worldwide_9)
+
+gg_covid <- ggplot (data = covid_lines, aes(x=date, y = new_cases_smoothed_capita, group = country)) +
+  geom_line(aes(color = continent,            
+                text = paste("Country: ", country, 
+                             "<br>Date: ", date, 
+                              "<br> New covid cases per million population:", new_cases_smoothed_capita, 
+                              "<br> Population Density", population_density, 
+                              " <br> GDP per capita", gdp_per_capita, 
+                              " <br> Life expectancy", life_expectancy, 
+                              " <br> Aged 70 older", aged_65_older
+                              
+                        )), show.legend = FALSE, 
+inherit_aes = FALSE)+
+  xlab("Date") + ylab("New Cases Per Capita")+ 
+  ggtitle("Covid cases trends per capita") +
+  theme_bw()
+
+ bscols(widths = c(3,9),
+        list(
+              filter_select("id", label = "Select a country", covid_lines, ~country),
+              filter_slider(id = "slider_pd", label = "Population Density",
+                    covid_lines, column = ~population_density),
+              filter_slider(id = "slider_gdp_per_capita", label = " GDP Per Capita", 
+                            covid_lines, column = ~gdp_per_capita), 
+              filter_slider(id = "slider_le", label = "Life Expectancy", 
+                            covid_lines, column = ~life_expectancy),
+              filter_slider(id = "slider_aged70", label = "Aged 65 older", 
+                            covid_lines, column = ~aged_65_older)
+             ), 
+          ggplotly(gg_covid, dynamicTicks = TRUE, tooltip = c("text"),  
+           tooltipoptions = list(placement = "bottom"))
+ 
+)
+
+#thanks to: for controlling -tooltips: https://plotly-r.com/controlling-tooltips.html and for the introduction to #cross-talk:  https://plotly-r.com/client-side-linking.html 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
