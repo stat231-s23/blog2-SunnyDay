@@ -59,9 +59,15 @@ library(leaflet)
 
 #my laptop is funky and particular and only wants to read files in this way >:( But I'm pretty sure that if you set your session to the appropriate folder (blog2-SunnyDay) and then read from /emma/data/biggie.csv
 #data <- read.csv("~/Desktop/RStudio231/2-strawbridge-emma/blog2-SunnyDay/emma/data/biggie.csv")
+
+# update this path to where your Dropbox folder with the covid_worldwide_7 data is located
+# on your computer
+my_path <- "C:/Users/kcorreia/Dropbox (Amherst College)"
+
 data <- read.csv("emma/data/biggie.csv")
 country_pubs <- readRDS(file = "tabitha blog work/data/pubs_by_country.RDs")
 common_topics <- readRDS(file = "tabitha blog work/data/common_topics.RDs")
+covid_worldwide_7 <- readRDS(file = glue::glue("{my_path}/Stat231-SunnyDay-data/covid_worldwide_7.RDS"))
 ```
 
 # Exploring worldwide Covid Data!
@@ -204,30 +210,30 @@ covid_worldwide_7 <- covid_worldwide_7 %>%
  covid_worldwide_8_leaflet <- st_transform(covid_worldwide_7_leaflet, "+proj=longlat +datum=WGS84")
  
 
-# Define a color palette over the values 0 to 1
-my_palette <- colorNumeric(palette = "YlGnBu"
-, domain = covid_worldwide_8_leaflet$total_cases_capita)
-
+# Define a color palette 
+my_palette <- colorQuantile(rev(viridis::viridis(5))
+                  , domain =  covid_worldwide_8_leaflet$total_cases_capita, n=5)
 
 # Create interactive map, zoomed in on Amherst
-map <- leaflet(data = covid_worldwide_8_leaflet) %>%
-  addTiles() %>%
+map <- leaflet(data = covid_worldwide_8_leaflet
+         , options = leafletOptions(attributionControl = FALSE)) %>%
+ # addTiles() %>%
    addPolygons(
       fillColor = ~my_palette(total_cases_capita),
        stroke = FALSE,
         popup = ~ glue::glue("Country: {str_to_title(country)}
-                        <br> {paste0(round(total_cases_capita,2), '%')}"), 
-      weight = 1, smoothFactor = 0.5,
-    opacity = 1.0, fillOpacity = 0.5,
-   # fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
-    #highlightOptions = highlightOptions(color = "white", weight = 2,
-    #  bringToFront = TRUE), 
-   highlightOptions = highlightOptions( weight = 5, color = "#666", bringToFront = TRUE)) %>%
+                        <br> {paste0(round(total_cases_capita,2), '%')}")
+      , weight = 2, smoothFactor = 0.5, opacity = 1, fillOpacity = 1
+      , labelOptions= labelOptions(direction = 'auto')
+      , color='#333333'
+      , highlightOptions = highlightOptions(color='#000000', weight = 2
+                                            , bringToFront = TRUE
+                                            , sendToBack = TRUE)) %>%
    addLegend(pal = my_palette,
             values = covid_worldwide_8_leaflet$total_cases_capita,
-           position = "bottomright",
+           position = "topright",
            title = "Percentage of Per capita cases reported
-            <br> (% 2021-2022)" )
+            <br> (% 2021-2022)", opacity = 1)
 
 ```
 
