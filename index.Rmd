@@ -7,10 +7,10 @@ output:
     highlight: "kate"
 ---
 
-```{r setup, include = FALSE, warnings=FALSE, message=FALSE}
+```{r setup, include = FALSE, warnings=FALSE, message=FALSE, echo = FALSE}
 # Set code chunk defaults 
 # Consider adding `message = FALSE` option
-knitr::opts_chunk$set(echo = FALSE) 
+#knitr::opts_chunk$set(echo = FALSE) 
                       
 # Set R environment options
 options(knitr.kable.NA = '')
@@ -62,12 +62,12 @@ library(leaflet)
 
 # update this path to where your Dropbox folder with the covid_worldwide_7 data is located
 # on your computer
-my_path <- "C:/Users/kcorreia/Dropbox (Amherst College)"
+
 
 data <- read.csv("emma/data/biggie.csv")
 country_pubs <- readRDS(file = "tabitha blog work/data/pubs_by_country.RDs")
 common_topics <- readRDS(file = "tabitha blog work/data/common_topics.RDs")
-covid_worldwide_7 <- readRDS(file = glue::glue("{my_path}/Stat231-SunnyDay-data/covid_worldwide_7.RDS"))
+
 ```
 
 # Exploring worldwide Covid Data!
