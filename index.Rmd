@@ -162,17 +162,23 @@ covid_worldwide_7 <- readRDS("data/covid_worldwide_data.RDS")
 
 ## Analysis of socio-economic factors that have influenced covid-19 cases from a global perspective.
 
-In my analysis, I delved into the distribution of covid-19 metrics, such as the number of deaths, cases and vaccinations, and took a country-by-country approach to comparing these values. Through this process, I created a graph that visualizes the total number of covid cases reported by all countries from January 2020 to January 2023. Additionally, the accompanying table provides a more detailed overview of pandemic observations, including the number of cases, deaths and vaccinations adjusted to the population size, allowing for a closer examination of which countries have fared better or worse. 
+In my analysis, I explored the distribution of COVID-19 parameters such as the per capita percentage of deaths, cases, and vaccinations, the distribution of those covid related observations, and the possible correlations between these parameters and the socio-economic determinants of each country. I took a country-by-country approach to comparing these values. Due to the restrictions inherent in the use of statistical tools such as graphs and tables, I had to restrict my analysis to the years 2021-2022. I chose this specific period because many countries were skeptical about covid-19 in 2022, and it was not declared a global pandemic until the end of March by the WHO. Moreover, we are at the beginning of 2023, so an annual analysis is also impossible.Although my analysis has focused on the distribution of the different observations related to covid-19 depending on various socio-economic factors, I must say that having an overview of the cumulative cases of covid per capita in 2 years through this process can also give a first glance outlook of how different countries have fared in that regard.
 
-The goal of creating this graph was to first recognize the disparity in reported per capita COVID-19 cases across different countries. This lays the foundation for further analysis of the potential socio-economic factors that may contribute to these trends.
+The following graph (that displays spatial data) illustrates the cumulative COVID-19 cases per capita  reported by all countries from January 2021 to December 2022. Additionally, the accompanying table provides a more detailed overview of COVID-19 related observations, including the cumulative per capita cases, deaths and vaccinations. 
+
+The purpose of creating this graph was to illustrate the variation in per capita COVID-19 cases reported by different countries. This helps to identify contries that have been more severely affected by the pandemic compared to others; which is not always evident on a map view. This lays the foundation for further analysis of the potential socio-economic factors that may contribute to these trends.
 
 
 ```{r, warnings=FALSE, message=FALSE, echo = FALSE}
 options(warn=-1)
 covid_worldwide_7 <- covid_worldwide_7 %>%
-  filter(!is.na(country) & country != "")
-
+    filter(!is.na(country) & country != "")%>%
+    filter(gdp_per_capita != 0)%>%
+    filter(life_expectancy != 0)%>%
+    filter(aged_65_older != 0)
+# we must remove any rows where the GDP per capita value equals 0 because no countries has a gdp_per_capita = 0, and where life_expectancy = 0. #for some reasons, some observations ended up being like that: 
 #total counts
+
   covid_worldwide_dataT <- covid_worldwide_7 %>%
     select("country" | "continent" | "date"| "new_deaths_smoothed" |
              "new_cases_smoothed" | "new_tests_smoothed"| "new_vaccinations_smoothed" | "population" |"life_expectancy"|"aged_65_older" | iso_code | geom | longitude | latitude) %>%
@@ -248,9 +254,9 @@ covid_worldwide_dataT_capita_table <- covid_worldwide_dataT_capita_ungrouped %>%
 #covid_worldwide_dataT_capita_table%>% 
   dataframe <- DT::datatable(covid_worldwide_dataT_capita_table, 
                 colnames = c("Country", "Percentage of Covid-19 cases Per Capita", 
-                         "Percentage of  Deaths Per Capita", 
-                         "Percentage of  Vaccinations Per Capita", 
-                         "Percentage of  Tests Per Capita"),
+                         " Per Capita Percentage of  Deaths", 
+                         " Per Capita Percentage of  Vaccinations", 
+                         " Per Capita Percentage of  Tests"),
             filter = 'top',
             options = list(autoWidth = TRUE))
 
@@ -273,23 +279,27 @@ dataframe
 
 #### Some features about both representations: 
 
-At a glance, the majority of countries are reporting that the total number of people who have caught covid is
-between 10 and 20% of their national population. However the table is worrying as some countries claim to have never had a covid case like North Korea or never had a covid death like my home country, Burundi, but I was there last summer and I can assure you that far too many people had "the flu". Some countries claim to have never done a test or vaccinations. 
+At a glance, Europe is the continent where most countries are reporting a higher cumulative covid cases per capita total compared to the rest of the world and some countries stand out like South Korea, Australia, Iceland. 
 
-The other notable feature of the map is that some countries in Europe such as France, Portugal, Iceland, South Korea, Bulgaria, and others, appear to have had the highest cumulative per capita COVID-19 cases from 2021 to 2022.
+The other notable feature of the map is that some countries (the ones that are colored in Yellow) are reporting very low cumulative covid cases per capita total (Madagascar for example, it is reported that only/around $0.17%$ of the population seems to have caught covid ~ which is really small percentage). 
+A look at the table gives a another story; among the countries with a close a zero percentage of covid-19 cases, we find Norht Korea (which is a Hermetic kingdom so this doesn't surprise)
+
+A few countries (like Varican, Burundi, North Korea, Taiwan) report not having had any covid-19 related deaths in those two years which is a surprising factor. In general, the countries with the lowest percentage of covid-19 cases per capita seems to have an equally almost null covid-19 relatd e
 
 #### Covid distribution in relation to other factors. 
 
 As my first objective was to find a potential connecting thread between the socio-economic factors specific to each country and the fact that they were reflected in the observations associated with the pandemic, I undertook to analyze the progression of covid- 19 for each country and I have included filtering choices which allowed to visualize the countries whose socio-economic factor is in a certain range, say whose GDP is in a certain range, average age and so on. 
 
+The important point to note is that there is a cost associated with using interactivity that is not integrated within Shiny. Specifically, the user experience with the graph isn't the most seamless, and it might take time for operations like range selector to take effect. 
 
 #### Socio-economic factors and covid related observations.
 
-##### Per Capita Percentage of Case Counts vs GDP Per Capita and Population Density
+##### Per Capita Percentage of Case Counts vs GDP Per Capita 
 
 ```{r, warnings=FALSE, message=FALSE, echo = FALSE}
 covid_worldwide_8 <- covid_worldwide_7 %>%
-  filter(!is.na(country) & country != "")
+  filter(!is.na(country) & country != "") 
+
 
 
 covid_worldwide_9 <- covid_worldwide_8 %>%
@@ -307,19 +317,17 @@ gg_covid <- ggplot (data = covid_lines, aes(x=date, y = new_cases_smoothed_capit
   geom_line(aes(color = continent,            
                 text = paste("Country: ", country, 
                              "<br>Date: ", date, 
-                              "<br> New covid cases per capita", new_cases_smoothed_capita, "%",
+                              "<br> Per capita percentage of new covid cases", new_cases_smoothed_capita, "%",
                               "<br> Population Density", population_density, 
                               " <br> GDP per capita", gdp_per_capita
                         )), show.legend = FALSE)+
-  xlab("Date") + ylab("Percentage of New Cases Per Capita")+ 
+  xlab("Date") + ylab("Per capita percentage of new cases")+ 
   ggtitle("Per Capita Covid Cases Trend") +
   theme_bw()
 
  bscols(widths = c(3,9),
         list(
               filter_select("id", label = "Select a country", covid_lines, ~country),
-              filter_slider(id = "slider_pd", label = "Population Density",
-                    covid_lines, column = ~population_density),
               filter_slider(id = "slider_gdp_per_capita", label = " GDP Per Capita", 
                             covid_lines, column = ~gdp_per_capita)
              ), 
@@ -329,6 +337,10 @@ gg_covid <- ggplot (data = covid_lines, aes(x=date, y = new_cases_smoothed_capit
 )
 
 ```
+
+Although the graph did not provide the level of detail I was hoping for, with most countries showing similar per capita percentages of COVID cases, there were a few countries whose per capita percentages increased dramatically or followed an unusual distribution. By utilizing crosstalk's interactive capabilities to limit the GDP ranges, I was able to uncover valuable insights. For example, when restricting the GDP per capita range from 20,000 to 59,000, the per capita percentage of new cases for those countries appeared to be constrained between 0 and 0.8. Similarly, for countries with higher GDP per capita (over 77,000, such as Qatar and Switzerland), the per capita percentage of new COVID cases was also constrained between 0 and 0.35.
+
+However, for countries with lower GDP per capita, there was a greater range of variations in the per capita percentage of new cases. For instance, Marshall Islands (with a GDP per capita of 3,819) had new COVID cases counts that were as high as 3% of its total population, while Burundi (with a GDP per capita of 789) saw its highest per capita COVID cases at only 0.006. 
 
 
 ##### Per Capita Percentage of  Covid-induced Deaths vs GDP Life Expectancy and Proportion of 65+ people.
@@ -340,13 +352,13 @@ gg_covid_2 <- ggplot (data = covid_lines_2, aes(x=date, y = new_deaths_smoothed_
   geom_line(aes(color = continent,            
                 text = paste("Country: ", country, 
                              "<br>Date: ", date, 
-                              "<br> New covid cases per capita", new_deaths_smoothed_capita, "%", 
+                              "<br> Per capita percentage of new covid related deaths", new_deaths_smoothed_capita, "%", 
                               "<br> Life expectancy", life_expectancy, 
                              " <br> Aged 65 older", aged_65_older
                               
                               
                         )), show.legend = FALSE)+
-  xlab("Date") + ylab("Percentage of New Deaths Per Capita")+ 
+  xlab("Date") + ylab("Per capita percentage of new covid related deaths")+ 
   ggtitle("Per Capita Covid Deaths Trend") +
   theme_bw()
 
@@ -357,31 +369,37 @@ gg_covid_2 <- ggplot (data = covid_lines_2, aes(x=date, y = new_deaths_smoothed_
               filter_slider(id = "slider_aged70", label = "Aged 65 older", 
                             covid_lines_2, column = ~aged_65_older)
              ), 
-          ggplotly(gg_covid_2, dynamicTicks = TRUE, tooltip = c("text"),  
+          ggplotly(gg_covid_2, ddynamicTicks = TRUE, tooltip = c("text"),  
            tooltipoptions = list(placement = "bottom"))
  
 )
 
 ```
+
+At first glance, we can observe that the overall range of the per capita percentage of COVID-induced deaths is below 0.01%, which suggests that while COVID-19 is a health threat with unknown long-term ramifications, it is not as deadly as one might initially think when taking into account the high number of cases.
+
+When examining specific life expectancy ranges, such as 53 to 67 and 67 to 81, the per capita percentage of daily COVID deaths ranges from 0.0000 to 0.0075. Most countries in these ranges do not experience a per capita percentage of daily COVID deaths above 0.0025. However, there are few outliers, whose upper limit is 0.0075. 
+
+
 ##### Per Capita Percentage of Vaccination Counts vs GDP Per Capita for each country. 
 
-```{r}
+```{r, warnings=FALSE, message=FALSE, echo = FALSE}
 covid_lines_3 <- highlight_key(covid_worldwide_9)
 
 gg_covid_3 <- ggplot (data = covid_lines_3, aes(x=date, y = new_vaccinations_smoothed_capita, group = country)) +
   geom_line(aes(color = continent,            
                 text = paste("Country: ", country, 
                              "<br>Date: ", date, 
-                              "<br> Vaccinations per capita", new_vaccinations_smoothed_capita, "%",
+                              "<br> Per capita percentage of new covid vaccinations", new_vaccinations_smoothed_capita, "%",
                               " <br> GDP per capita", gdp_per_capita
                         )), show.legend = FALSE)+
-  xlab("Date") + ylab("Percentage of New Vaccinations Per Capita")+ 
+  xlab("Date") + ylab("Per capita percentage of covid vaccinations")+ 
   ggtitle("Per Capita Vaccinations Trend") +
   theme_bw()
 
  bscols(widths = c(3,9),
         list(
-              filter_select("id", label = "Select a country", covid_lines_3, ~country),
+              filter_select("id", label = "Select a country", covid_lines, ~country),
               filter_slider(id = "slider_gdp_per_capita_2", label = " GDP Per Capita", 
                             covid_lines_3, column = ~gdp_per_capita)
              ), 
@@ -389,18 +407,22 @@ gg_covid_3 <- ggplot (data = covid_lines_3, aes(x=date, y = new_vaccinations_smo
            tooltipoptions = list(placement = "bottom")))
 ```
 
-#### Note: 
-The pay to price of an interactivity that is not embedded within shiny is that the interactivity is very slow, it doesn't allow for a smooth use of the graph. .
 
-#### Possible Findings: 
+In this line chart, like in the previous graphs, all the lines are stacked on top of each other, which makes it challenging to draw any conclusions at first glance. However, with further analysis, we can still gather valuable insights. The general trend in this chart shows that the per capita percentage of daily COVID vaccinations seems to decrease towards the end of 2022.
+
+Moreover, when we examine countries with a high GDP per capita (above 72,000), the per capita percentage of daily COVID vaccinations ranges between 0 and 1.4. Among countries with a GDP per capita between 31,000 and 75,000, the range appears to be between 0 and 2.5. For countries with a low GDP per capita (defined as being between 675 dollars and 35000), the range of per capita percentage of daily COVID vaccinations varies greatly between 0 and 12%, with Bhutan being the outlier. For most low GDP countries, the rate of per capita percentage of daily COVID vaccinations is between 0 and 4%. However, it's worth noting that other factors beyond GDP per capita may influence these trends, and further analysis is necessary to identify them.
 
 #### Tools and Inherent Limitations associated with the tools.
 Crosstalk, according to Chapter 16 of https://plotly-r.com/client-side-linking.html  is a framework for creating widgests and dashboards that allow users to filter, sort and group data, and then visualize the results in real-time.Consequently, it allows one to embed an interactive histogram into an html page generated from an R Markdown document, which is what I needed. 
 
-Due to its computational demands, crosstalk isn't be suitable for larger datasets with a high number of daily observations. Thus, my analysis of the trend of different COVID observations was limited.
+Due to its computational demands, crosstalk isn't\ suitable for larger datasets with a high number of daily observations. Thus, my analysis of the trend of different COVID observations was limited.
 
-#### Inherent Limitation to Making Conclusive Findings: 
-During the data wrangling process, it became apparent that many countries had no COVID-related observations for several months at a time. This lack of reported differs from a zero observation, reason why I haven't made any conclusion yet, and I believe that it should be taken into account when analyzing the data.
+####  Observations: 
+
+To draw more definitive conclusions from the dataset, it is essential to conduct a more focused analysis that considers one factor at a time. By reducing the scope of analysis, I would have been able to make more specific arguments rather than the general observations I made above.
+
+#### Inherent Limitations to Making Conclusive Findings: 
+During the data wrangling process, it became apparent that for several months at a time, many countries had no COVID-related observations reported. This lack of reported data differs from a zero observation and limits my ability to analyze the data and draw conclusions. One potential avenue to explore would be to exclude the countries with the highest count of missing values from the analysis.
 
 
 ## Emma - Covid Recovery Times
@@ -528,6 +550,11 @@ Ultimately I think this is a really interesting concept, and if I had better and
 
 ## References
 
+0. Data sets: 
+
+Lynca: 
+
+Edouard Mathieu, Hannah Ritchie, Lucas Rodés-Guirao, Cameron Appel, Charlie Giattino, Joe Hasell, Bobbie Macdonald, Saloni Dattani, Diana Beltekian, Esteban Ortiz-Ospina and Max Roser (2020) - "Coronavirus Pandemic (COVID-19)". Published online at OurWorldInData.org. Retrieved from: 'https://ourworldindata.org/coronavirus' [Online Resource]
 
 1. Xie Y, Cheng J, Tan X (2023). _DT: A Wrapper of the JavaScript Library 'DataTables'_. R package version 0.27,
   <https://CRAN.R-project.org/package=DT>.

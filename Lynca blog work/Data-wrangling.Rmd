@@ -230,7 +230,10 @@ The goal of creating this graph was to first recognize the disparity in reported
 ```{r, warnings=FALSE, message=FALSE, echo = FALSE}
 options(warn=-1)
 covid_worldwide_9 <- covid_worldwide_8 %>%
-  filter(!is.na(country) & country != "")
+  filter(!is.na(country) & country != "")%>%
+  filter(gdp_per_capita != 0)%>%
+  filter(life_expectancy != 0)%>%
+  filter(aged_65_older != 0)
 
 #total counts
   covid_worldwide_dataT <- covid_worldwide9 %>%
