@@ -41,7 +41,6 @@ library(stringi)
 library(ggthemes)
 library(gridExtra) 
 library(knitr)
-library(ggplot2)
 library(RMariaDB)
 # help with extracting the right data frames from xlsx
 library(readr)
@@ -72,11 +71,11 @@ common_topics <- readRDS(file = "tabitha blog work/data/common_topics.RDs")
 
 # Exploring worldwide Covid Data!
 
-
+We chose to expand the area of our research to investigate global trends in covid cases in a few different ways. We wanted to look at the reactions — published documents or articles during 2020, as well as more case data. We looked at socioeconomic status and life expectancy as it related to case count, and finally clustered to attempt to determine what traits made countries good or bad at recovering from covid. As compared to our other project using only Massachusetts, we expanded our range and used more advanced statistical techniques.
 
 ## Tabitha - Covid Publications Trends and Analysis
 
-During the pandemic, scientists around the globe were putting all of their resources into better understanding Covid-19 and finding a vaccine. This led to an unprecedented level of scientific advancement and research, which is reflected in the scientific publications released to document these discoveries. For this analysis, I used data from Dimensions, the world's largest linked research database. The dataset I used encompasses all publications, datasets, and clinical trials from Dimensions pertaining to Covid-19 from March 2020 to September 2021, and can be accessed here. With such a comprehensive data source, I hoped to explore trends and similarities in Covid-related publications. Specifically, I wanted to analyze which countries contributed the most to Covid research efforts based on their publication amounts, and what the most common topics of interest were across all the Covid publications based on their titles.
+During the pandemic, scientists around the globe were putting all of their resources into better understanding Covid-19 and finding a vaccine. This led to an unprecedented level of scientific advancement and research, which is reflected in the scientific publications released to document these discoveries. For this analysis, I used data from Dimensions, the world's largest linked research database. The dataset I used encompasses all publications, datasets, and clinical trials from Dimensions pertaining to Covid-19 from March 2020 to September 2021, and can be accessed here (https://dimensions.figshare.com/articles/dataset/Dimensions_COVID-19_publications_datasets_and_clinical_trials/11961063/42). With such a comprehensive data source, I hoped to explore trends and similarities in Covid-related publications. Specifically, I wanted to analyze which countries contributed the most to Covid research efforts based on their publication amounts, and what the most common topics of interest were across all the Covid publications based on their titles.
 
 #### Publications by Country
 
@@ -104,7 +103,7 @@ cpubs20_plotly <- ggplotly(country_pub_gg20, tooltip = "count")
 cpubs20_plotly
 ```
 
-```{r}
+```{r echo=FALSE}
 #ggplot barchart of publications by country 2021
 country_pub_gg21 <- country_pubs %>%
   filter(pub_year == 2021) %>%

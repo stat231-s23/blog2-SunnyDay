@@ -41,3 +41,4 @@ vignettes/*.pdf
 # Other
 .DS_Store
 data/covid_worldwide_7.Rds
+data/covid_worldwide_data.Rds
