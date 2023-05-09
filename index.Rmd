@@ -283,7 +283,7 @@ The other notable feature of the map is that some countries in Europe such as Fr
 As my first objective was to find a potential connecting thread between the socio-economic factors specific to each country and the fact that they were reflected in the observations associated with the pandemic, I undertook to analyze the progression of covid- 19 for each country and I have included filtering choices which allowed to visualize the countries whose socio-economic factor is in a certain range, say whose GDP is in a certain range, average age and so on. 
 
 
-#### Socio-economic factors and covid related observations. {.tabset}
+#### Socio-economic factors and covid related observations.
 
 ##### Per Capita Percentage of Case Counts vs GDP Per Capita and Population Density
 
@@ -307,7 +307,7 @@ gg_covid <- ggplot (data = covid_lines, aes(x=date, y = new_cases_smoothed_capit
   geom_line(aes(color = continent,            
                 text = paste("Country: ", country, 
                              "<br>Date: ", date, 
-                              "<br> % New covid cases per capita", new_cases_smoothed_capita, 
+                              "<br> New covid cases per capita", new_cases_smoothed_capita, "%",
                               "<br> Population Density", population_density, 
                               " <br> GDP per capita", gdp_per_capita
                         )), show.legend = FALSE)+
@@ -331,15 +331,17 @@ gg_covid <- ggplot (data = covid_lines, aes(x=date, y = new_cases_smoothed_capit
 ```
 
 
-##### Per Capita Percentage of  Covid-induced Deaths  vs GDP Life Expectancy and Proportion of 65+ people.
+##### Per Capita Percentage of  Covid-induced Deaths vs GDP Life Expectancy and Proportion of 65+ people.
 
 ```{r, warnings=FALSE, message=FALSE, echo = FALSE}
-gg_covid_2 <- ggplot (data = covid_lines, aes(x=date, y = new_deaths_smoothed_capita, group = country)) +
+covid_lines_2 <- highlight_key(covid_worldwide_9)
+
+gg_covid_2 <- ggplot (data = covid_lines_2, aes(x=date, y = new_deaths_smoothed_capita, group = country)) +
   geom_line(aes(color = continent,            
                 text = paste("Country: ", country, 
                              "<br>Date: ", date, 
-                              "<br> New covid cases per capita", new_deaths_smoothed_capita, 
-                              " <br> Life expectancy", life_expectancy, 
+                              "<br> New covid cases per capita", new_deaths_smoothed_capita, "%", 
+                              "<br> Life expectancy", life_expectancy, 
                              " <br> Aged 65 older", aged_65_older
                               
                               
@@ -351,15 +353,40 @@ gg_covid_2 <- ggplot (data = covid_lines, aes(x=date, y = new_deaths_smoothed_ca
  bscols(widths = c(3,9),
         list(
               filter_slider(id = "slider_le", label = "Life Expectancy", 
-                            covid_lines, column = ~life_expectancy),
+                            covid_lines_2, column = ~life_expectancy),
               filter_slider(id = "slider_aged70", label = "Aged 65 older", 
-                            covid_lines, column = ~aged_65_older)
+                            covid_lines_2, column = ~aged_65_older)
              ), 
           ggplotly(gg_covid_2, dynamicTicks = TRUE, tooltip = c("text"),  
            tooltipoptions = list(placement = "bottom"))
  
 )
 
+```
+##### Per Capita Percentage of Vaccination Counts vs GDP Per Capita for each country. 
+
+```{r}
+covid_lines_3 <- highlight_key(covid_worldwide_9)
+
+gg_covid_3 <- ggplot (data = covid_lines_3, aes(x=date, y = new_vaccinations_smoothed_capita, group = country)) +
+  geom_line(aes(color = continent,            
+                text = paste("Country: ", country, 
+                             "<br>Date: ", date, 
+                              "<br> Vaccinations per capita", new_vaccinations_smoothed_capita, "%",
+                              " <br> GDP per capita", gdp_per_capita
+                        )), show.legend = FALSE)+
+  xlab("Date") + ylab("Percentage of New Vaccinations Per Capita")+ 
+  ggtitle("Per Capita Vaccinations Trend") +
+  theme_bw()
+
+ bscols(widths = c(3,9),
+        list(
+              filter_select("id", label = "Select a country", covid_lines_3, ~country),
+              filter_slider(id = "slider_gdp_per_capita_2", label = " GDP Per Capita", 
+                            covid_lines_3, column = ~gdp_per_capita)
+             ), 
+          ggplotly(gg_covid_3, dynamicTicks = TRUE, tooltip = c("text"),  
+           tooltipoptions = list(placement = "bottom")))
 ```
 
 #### Note: 
@@ -502,7 +529,7 @@ Ultimately I think this is a really interesting concept, and if I had better and
 ## References
 
 
-1.  Xie Y, Cheng J, Tan X (2023). _DT: A Wrapper of the JavaScript Library 'DataTables'_. R package version 0.27,
+1. Xie Y, Cheng J, Tan X (2023). _DT: A Wrapper of the JavaScript Library 'DataTables'_. R package version 0.27,
   <https://CRAN.R-project.org/package=DT>.
 
 2. Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M,
@@ -524,7 +551,7 @@ Ultimately I think this is a really interesting concept, and if I had better and
 6. Slowikowski K (2023). _ggrepel: Automatically Position Non-Overlapping Text Labels with 'ggplot2'_. R package version
   0.9.3, <https://CRAN.R-project.org/package=ggrepel>.
 
-7.  Robinson D, Hayes A, Couch S (2023). _broom: Convert Statistical Objects into Tidy Tibbles_. R package version 1.0.4,
+7. Robinson D, Hayes A, Couch S (2023). _broom: Convert Statistical Objects into Tidy Tibbles_. R package version 1.0.4,
   <https://CRAN.R-project.org/package=broom>.
 
 8. Schloerke B, Cook D, Larmarange J, Briatte F, Marbach M, Thoen E, Elberg A, Crowley J (2021). _GGally: Extension to
@@ -536,9 +563,9 @@ Ultimately I think this is a really interesting concept, and if I had better and
 10. Zhu H (2021). _kableExtra: Construct Complex Table with 'kable' and Pipe Syntax_. R package version 1.3.4,
   <https://CRAN.R-project.org/package=kableExtra>.
 
-11.  C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC Florida, 2020.
+11. C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC Florida, 2020.
 
-12.  Wickham H, Seidel D (2022). _scales: Scale Functions for Visualization_. R package version 1.2.1,
+12. Wickham H, Seidel D (2022). _scales: Scale Functions for Visualization_. R package version 1.2.1,
   <https://CRAN.R-project.org/package=scales>.
 
 13. Firke S (2023). _janitor: Simple Tools for Examining and Cleaning Dirty Data_. R package version 2.2.0,
@@ -577,16 +604,16 @@ Ultimately I think this is a really interesting concept, and if I had better and
   
 25 Yihui Xie (2023). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version 1.42.
 
-26.  Müller K, Ooms J, James D, DebRoy S, Wickham H, Horner J (2022). _RMariaDB: Database Interface and MariaDB Driver_. R
+26. Müller K, Ooms J, James D, DebRoy S, Wickham H, Horner J (2022). _RMariaDB: Database Interface and MariaDB Driver_. R
   package version 1.2.2, <https://CRAN.R-project.org/package=RMariaDB>.
 
-27.  Wickham H, Hester J, Bryan J (2023). _readr: Read Rectangular Text Data_. R package version 2.1.4,
+27. Wickham H, Hester J, Bryan J (2023). _readr: Read Rectangular Text Data_. R package version 2.1.4,
   <https://CRAN.R-project.org/package=readr>.
   
-28.  Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vector Data. The R Journal 10 (1),
+28. Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vector Data. The R Journal 10 (1),
   439-446, https://doi.org/10.32614/RJ-2018-009
 
-29.  Wickham H (2022). _rvest: Easily Harvest (Scrape) Web Pages_. R package version 1.0.3,
+29. Wickham H (2022). _rvest: Easily Harvest (Scrape) Web Pages_. R package version 1.0.3,
   <https://CRAN.R-project.org/package=rvest>.
 
 30. Meissner P, Ren K (2020). _robotstxt: A 'robots.txt' Parser and 'Webbot'/'Spider'/'Crawler' Permissions Checker_. R
@@ -600,7 +627,7 @@ Ultimately I think this is a really interesting concept, and if I had better and
 33. South A (2012). _rworldxtra: Country boundaries at high resolution._. R package version 1.01,
   <https://CRAN.R-project.org/package=rworldxtra>.
 
-34  Cheng J, Sievert C (2021). _crosstalk: Inter-Widget Interactivity for HTML Widgets_. R package version 1.2.0,
+34. Cheng J, Sievert C (2021). _crosstalk: Inter-Widget Interactivity for HTML Widgets_. R package version 1.2.0,
   <https://CRAN.R-project.org/package=crosstalk>.
 
 35. Vaidyanathan R, Xie Y, Allaire J, Cheng J, Sievert C, Russell K (2023). _htmlwidgets: HTML Widgets for R_. R package
@@ -609,10 +636,10 @@ Ultimately I think this is a really interesting concept, and if I had better and
 36. Sievert C, Cheng J (2022). _bslib: Custom 'Bootstrap' 'Sass' Themes for 'shiny' and 'rmarkdown'_. R package version
   0.4.2, <https://CRAN.R-project.org/package=bslib>.
 
-37.  Lin G (2023). _reactable: Interactive Data Tables for R_. R package version 0.4.4,
+37. Lin G (2023). _reactable: Interactive Data Tables for R_. R package version 0.4.4,
   <https://CRAN.R-project.org/package=reactable>.
 
-38.  Cheng J, Karambelkar B, Xie Y (2023). _leaflet: Create Interactive Web Maps with the JavaScript 'Leaflet' Library_. R
+38. Cheng J, Karambelkar B, Xie Y (2023). _leaflet: Create Interactive Web Maps with the JavaScript 'Leaflet' Library_. R
   package version 2.1.2, <https://CRAN.R-project.org/package=leaflet>.
 
 
