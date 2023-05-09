@@ -155,7 +155,7 @@ As you can see, many of the most common topics (based on the publication title) 
 Although these visualizations are valuable tools in understanding the publications released on Covid during the height of the pandemic, there are several limitations to the conclusions we can draw from this data due to the manipulations necessary to perform these analyses. For example, all of the publications counted in both of these figures had to have titles written using the Latin alphabet, which means that English-speaking (or publishing) countries would be much more favored in the analysis. Also, some publications were excluded from these analyses that didn't have titles or countries assigned to them in the dataset, which could have been a flaw in the way the dataset was collected which may negatively affect certain countries.
 
 ```{r, warning = FALSE, echo = FALSE}
-covid_worldwide_7 <- readRDS("data/covid_worldwide_7.RDS")
+covid_worldwide_7 <- readRDS("data/covid_worldwide_data.RDS")
 #importing the dataset. 
 ```
 
