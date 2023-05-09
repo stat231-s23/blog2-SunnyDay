@@ -211,8 +211,8 @@ covid_worldwide_7 <- covid_worldwide_7 %>%
  
 
 # Define a color palette 
-my_palette <- colorQuantile(rev(viridis::viridis(5))
-                  , domain =  covid_worldwide_8_leaflet$total_cases_capita, n=5)
+my_palette <- colorQuantile(rev(viridis::viridis(20))
+                  , domain =  covid_worldwide_8_leaflet$total_cases_capita, n=20)
 
 # Create interactive map, zoomed in on Amherst
 map <- leaflet(data = covid_worldwide_8_leaflet
